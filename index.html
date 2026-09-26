@@ -69,7 +69,6 @@ button.btn.gray{background:#eee;color:#333}
 .quiz-opt.wrong{background:#f8d7da;border-color:#e74c3c;color:#721c24}
 .quiz-opt:disabled{cursor:default}
 .quiz-actions{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
-/* Editor */
 #editor{position:fixed;inset:0;background:#fff;z-index:300;display:flex;flex-direction:column}
 .ed-header{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:#fff;border-bottom:2px solid #eaeaea;gap:10px}
 .ed-run{background:#27ae60;color:#fff;border:none;padding:9px 16px;border-radius:9px;font-family:Tahoma;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap}
@@ -123,7 +122,7 @@ button.btn.gray{background:#eee;color:#333}
 <div id="editor" class="hide">
 <div class="ed-header">
 <button class="back-btn" onclick="closeEditor()">← بازگشت</button>
-<div class="ed-title" style="font-weight:bold;font-size:15px;color:#333;flex:1;text-align:center">🖥️ ویرایشگر</div>
+<div class="ed-title" style="font-weight:bold;font-size:15px;color:#333;flex:1;text-align:center">🖥️ ویرایشگر HTML</div>
 <button class="ed-run" onclick="runCode()">▶ اجرا</button>
 </div>
 <div class="ed-ai">
@@ -137,10 +136,9 @@ button.btn.gray{background:#eee;color:#333}
 </div>
 <script>
 // ============================================
-// آدرس Cloudflare Worker
+// آدرس Cloudflare Worker (توجه: حتماً درست باشه!)
 // ============================================
-const WORKER_URL = "https://ancient-thunder-42b4.sadqyamyrmdh67.workers.dev";
-// ⚠️ آدرس دقیق Worker خودت رو جایگزین کن
+const WORKER_URL = "https://ancient-thunder-42b4.sadqyamyrmhmd67.workers.dev";
 
 // ============================================
 // Fingerprint مرورگر برای شناسایی کاربر
@@ -183,9 +181,9 @@ async function callAI(payload) {
     
     if (res.status === 429) {
         const err = await res.json();
-        const err2 = new Error("RATE_LIMIT");
+        const err2 = new Error(err.error || "تعداد درخواست‌ها زیاد است");
+        err2.isRateLimit = true;
         err2.remaining_minutes = err.remaining_minutes || 10;
-        err2.message = err.error || "تعداد درخواست‌ها زیاد است";
         throw err2;
     }
     if (!res.ok) {
@@ -195,9 +193,6 @@ async function callAI(payload) {
     return res.json();
 }
 
-// ============================================
-// لیست زبان‌ها و موضوعات
-// ============================================
 const langs=[
 {id:"html",n:"HTML",i:"📄",t:[
 {t:"ساختار پایه صفحه",l:"easy"},{t:"تگ head و title",l:"easy"},{t:"عنوان‌ها h1 تا h6",l:"easy"},{t:"پاراگراف (p)",l:"easy"},{t:"شکست خط (br, hr)",l:"easy"},{t:"کامنت‌ها",l:"easy"},{t:"متن پررنگ (b, strong)",l:"easy"},{t:"ایتالیک (i, em)",l:"easy"},{t:"زیرخط و خط‌خورده (u, s)",l:"easy"},{t:"لینک‌ها (a)",l:"easy"},{t:"لینک ایمیل و تلفن",l:"easy"},{t:"لینک داخلی (Anchor)",l:"easy"},{t:"باز کردن در تب جدید",l:"easy"},{t:"تصاویر (img)",l:"easy"},{t:"اندازه تصویر",l:"easy"},{t:"لیست نامرتب (ul)",l:"easy"},{t:"لیست مرتب (ol)",l:"easy"},{t:"لیست تو در تو",l:"easy"},{t:"لیست توصیفی (dl)",l:"easy"},{t:"صفت‌ها (Attributes)",l:"easy"},{t:"id و class",l:"easy"},{t:"div و span",l:"med"},{t:"متن از پیش فرمت‌شده (pre)",l:"med"},{t:"نقل قول (blockquote)",l:"med"},{t:"علامت‌گذاری (mark, abbr)",l:"med"},{t:"کاراکترهای خاص (Entities)",l:"med"},{t:"جدول ساده",l:"med"},{t:"جدول با سرستون",l:"med"},{t:"ادغام سلول‌ها",l:"med"},{t:"فرم پایه",l:"med"},{t:"input انواع مختلف",l:"med"},{t:"متن چندخطی (textarea)",l:"med"},{t:"دکمه‌ها (button)",l:"med"},{t:"برچسب‌ها (label)",l:"med"},{t:"لیست کشویی (select)",l:"med"},{t:"چک‌باکس و رادیو",l:"med"},{t:"آپلود فایل",l:"med"},{t:"فیلدهای تاریخ و زمان",l:"med"},{t:"دسته‌بندی فرم (fieldset)",l:"med"},{t:"اعتبارسنجی HTML5",l:"med"},{t:"تگ‌های معنایی (semantic)",l:"med"},{t:"header, nav, main",l:"hard"},{t:"section, article, aside",l:"hard"},{t:"figure و figcaption",l:"hard"},{t:"audio و video",l:"hard"},{t:"iframe و embed",l:"hard"},{t:"canvas (نقاشی)",l:"hard"},{t:"SVG در HTML",l:"hard"},{t:"picture (ریسپانسیو)",l:"hard"},{t:"details و summary",l:"hard"},{t:"dialog (مودال)",l:"hard"},{t:"متا تگ‌ها (SEO)",l:"hard"},{t:"Open Graph",l:"hard"},{t:"favicon و PWA",l:"hard"},{t:"دسترسی‌پذیری (ARIA)",l:"hard"},{t:"Web Components",l:"hard"}]},
@@ -276,11 +271,12 @@ if(!txt) throw new Error("پاسخی نیامد");
 out.className="";out.innerHTML=md(txt);
 actions.classList.remove("hide");
 }catch(e){
-  if(e.message === "RATE_LIMIT"){
+  if(e.isRateLimit){
     out.className="err";
-    out.textContent = "⚠️ " + (e.remaining_minutes ? `${e.remaining_minutes} دقیقه دیگر می‌توانید امتحان کنید.` : "تعداد درخواست‌ها زیاد است.");
+    out.textContent = "⚠️ تعداد درخواست‌ها زیاد است. " + (e.remaining_minutes ? e.remaining_minutes + " دقیقه دیگر امتحان کنید." : "");
   } else {
-    out.className="err";out.textContent="❌ "+e.message;
+    out.className="err";
+    out.textContent="❌ " + e.message;
   }
   actions.classList.remove("hide");
 }
@@ -336,9 +332,9 @@ if(!Array.isArray(qs)||!qs.length)throw new Error("سوالی ساخته نشد"
 quizData=qs;quizIdx=0;quizScore=0;
 showQuestion();
 }catch(e){
-  if(e.message === "RATE_LIMIT"){
+  if(e.isRateLimit){
     document.getElementById("quizProgress").textContent="";
-    document.getElementById("quizQuestion").innerHTML=`<span style="color:#e67e22">⚠️ ${e.remaining_minutes ? e.remaining_minutes + " دقیقه دیگر امتحان کنید." : "لطفاً چند لحظه صبر کنید..."}</span>`;
+    document.getElementById("quizQuestion").innerHTML=`<span style="color:#e67e22">⚠️ ${e.remaining_minutes ? e.remaining_minutes + " دقیقه دیگر امتحان کنید." : "لطفاً صبر کنید..."}</span>`;
     document.getElementById("quizOptions").innerHTML='<div class="quiz-actions"><button class="btn" onclick="closeQuiz()">بستن</button></div>';
   } else {
     document.getElementById("quizProgress").textContent="";
@@ -451,8 +447,8 @@ ${currentCode}
     runCode();
     input.value = "";
   }catch(e){
-    if(e.message === "RATE_LIMIT"){
-      alert("⚠️ تعداد درخواست‌ها زیاد است. " + (e.remaining_minutes ? e.remaining_minutes + " دقیقه دیگر امتحان کنید." : "لطفاً صبر کنید."));
+    if(e.isRateLimit){
+      alert("⚠️ تعداد درخواست‌ها زیاد است. " + (e.remaining_minutes ? e.remaining_minutes + " دقیقه دیگر امتحان کنید." : ""));
     } else {
       alert("❌ " + e.message);
     }
