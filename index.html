@@ -261,6 +261,240 @@ const langs=[
 let CL=null,CT=null,quizData=[],quizIdx=0,quizScore=0;
 document.getElementById("langs").innerHTML=langs.map(l=>`<div class="card" id="card-${l.id}" onclick="pickLang('${l.id}')"><span class="ico">${l.i}</span><span class="name">${l.n}</span></div>`).join("");
 
+/* ============================================================
+   ⚡ مفسر محلی برای C#, C++, Java, PHP - اجرای فوری بدون AI
+   ============================================================ */
+function localInterpret(code, lang){
+  try{
+    let src = code;
+    // حذف کامنت‌ها
+    src = src.replace(/\/\*[\s\S]*?\*\//g, '');
+    if(lang === 'php'){
+      src = src.replace(/\/\/[^\n]*/g, '').replace(/#[^\n]*/g, '');
+      src = src.replace(/<\?php/gi, '').replace(/\?>/g, '');
+    } else {
+      src = src.replace(/\/\/[^\n]*/g, '');
+      src = src.replace(/^\s*#\s*\w+[^\n]*$/gm, '');
+      src = src.replace(/using\s+[\w.]+\s*;/g, '');
+      src = src.replace(/package\s+[\w.]+\s*;/g, '');
+    }
+    // استخراج بدنه Main/main
+    const mainRx = /\b(?:Main|main)\s*\([^)]*\)\s*\{/;
+    const mm = src.match(mainRx);
+    if(mm){
+      let start = mm.index + mm[0].length;
+      let depth = 1, end = start;
+      while(end < src.length && depth > 0){
+        if(src[end] === '{') depth++;
+        else if(src[end] === '}') depth--;
+        end++;
+      }
+      src = src.substring(start, end - 1);
+    }
+
+    const out = [];
+    const vars = {};
+    const MAX_OUT = 50000;
+    const MAX_ITER = 100000;
+
+    function splitStmts(text){
+      const stmts = [];
+      let i = 0;
+      while(i < text.length){
+        while(i < text.length && /\s/.test(text[i])) i++;
+        if(i >= text.length) break;
+        const startI = i;
+        let j = i, depth = 0, found = false;
+        while(j < text.length){
+          const c = text[j];
+          if(c === '(' || c === '[') depth++;
+          else if(c === ')' || c === ']') depth--;
+          else if(depth === 0 && c === ';'){
+            stmts.push(text.substring(i, j + 1).trim());
+            i = j + 1; found = true; break;
+          } else if(depth === 0 && c === '{'){
+            let d = 1, k = j + 1;
+            while(k < text.length && d > 0){
+              if(text[k] === '{') d++;
+              else if(text[k] === '}') d--;
+              k++;
+            }
+            stmts.push(text.substring(i, k).trim());
+            i = k; found = true; break;
+          }
+          j++;
+        }
+        if(!found){ stmts.push(text.substring(startI).trim()); break; }
+      }
+      return stmts;
+    }
+
+    function evalExpr(expr){
+      expr = String(expr).trim();
+      if(!expr) return '';
+      // استخراج رشته‌ها به placeholder
+      const strings = [];
+      expr = expr.replace(/"((?:[^"\\]|\\.)*)"/g, (m, inner) => {
+        const idx = strings.length;
+        strings.push(inner);
+        return `__STR${idx}__`;
+      });
+      // جایگزینی متغیرها
+      for(const k in vars){
+        const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if(lang === 'php'){
+          expr = expr.replace(new RegExp('\\$' + esc.replace(/^\$/,'') + '\\b', 'g'), () => JSON.stringify(vars[k]));
+        } else {
+          expr = expr.replace(new RegExp('\\b' + esc + '\\b', 'g'), () => JSON.stringify(vars[k]));
+        }
+      }
+      // بازگردانی رشته‌ها با درون‌یابی
+      expr = expr.replace(/__STR(\d+)__/g, (m, i) => {
+        let s = strings[parseInt(i)];
+        // پردازش escape
+        s = s.replace(/\\(.)/g, (mm, c) => {
+          if(c === 'n') return '\n';
+          if(c === 't') return '\t';
+          if(c === 'r') return '\r';
+          if(c === '\\') return '\\';
+          if(c === '"') return '"';
+          return c;
+        });
+        // درون‌یابی
+        if(lang === 'php'){
+          s = s.replace(/\$(\w+)/g, (_, v) => vars[v] !== undefined ? String(vars[v]) : '');
+        } else if(lang === 'cs' || lang === 'java'){
+          s = s.replace(/\{(\w+)\}/g, (_, v) => vars[v] !== undefined ? String(vars[v]) : '');
+        }
+        return JSON.stringify(s);
+      });
+      // پردازش‌های خاص زبان
+      if(lang === 'cpp'){
+        expr = expr.replace(/\bendl\b/g, '"\\n"');
+        expr = expr.replace(/<</g, '+');
+      }
+      if(lang === 'php'){
+        expr = expr.replace(/\s*\.\s*/g, '+');
+      }
+      try{
+        return Function('"use strict";return (' + expr + ')')();
+      }catch(e){ return expr; }
+    }
+
+    function exec(stmt){
+      if(out.length >= MAX_OUT) return;
+      stmt = stmt.trim();
+      if(!stmt || stmt === 'return 0' || stmt === 'return 0;') return;
+      // for
+      let m = stmt.match(/^for\s*\(\s*(?:int|var|let|long|double|float|bool|boolean|String|string)?\s*(\$?\w+)\s*=\s*([^;]+);\s*([\s\S]+?);\s*([\s\S]+?)\s*\)\s*\{([\s\S]*)\}$/);
+      if(m){
+        const [, vName, initVal, cond, incr, body] = m;
+        vars[vName] = evalExpr(initVal);
+        const innerStmts = splitStmts(body);
+        let guard = 0;
+        while(evalExpr(cond) && guard++ < MAX_ITER && out.length < MAX_OUT){
+          for(const s of innerStmts) exec(s);
+          const t = incr.trim();
+          if(t.endsWith('++')) vars[vName] = Number(vars[vName]) + 1;
+          else if(t.endsWith('--')) vars[vName] = Number(vars[vName]) - 1;
+          else {
+            const m2 = t.match(/([+\-*\/])=\s*([\s\S]+)/);
+            if(m2){
+              const v = Number(evalExpr(m2[2]));
+              if(m2[1] === '+') vars[vName] = Number(vars[vName]) + v;
+              else if(m2[1] === '-') vars[vName] = Number(vars[vName]) - v;
+              else if(m2[1] === '*') vars[vName] = Number(vars[vName]) * v;
+              else if(m2[1] === '/') vars[vName] = Number(vars[vName]) / v;
+            }
+          }
+        }
+        return;
+      }
+      // while
+      m = stmt.match(/^while\s*\(\s*([\s\S]+?)\s*\)\s*\{([\s\S]*)\}$/);
+      if(m){
+        const [, cond, body] = m;
+        const innerStmts = splitStmts(body);
+        let guard = 0;
+        while(evalExpr(cond) && guard++ < MAX_ITER && out.length < MAX_OUT){
+          for(const s of innerStmts) exec(s);
+        }
+        return;
+      }
+      // if
+      m = stmt.match(/^if\s*\(\s*([\s\S]+?)\s*\)\s*\{([\s\S]*?)\}\s*(?:else\s*\{([\s\S]*)\})?$/);
+      if(m){
+        const [, cond, thenBody, elseBody] = m;
+        if(evalExpr(cond)){
+          for(const s of splitStmts(thenBody)) exec(s);
+        } else if(elseBody){
+          for(const s of splitStmts(elseBody)) exec(s);
+        }
+        return;
+      }
+      // Console.WriteLine / Write
+      m = stmt.match(/^Console\.(WriteLine|Write)\s*\(([\s\S]*)\)\s*;?\s*$/);
+      if(m){
+        const val = evalExpr(m[2]);
+        out.push(String(val === undefined ? '' : val) + (m[1] === 'WriteLine' ? '\n' : ''));
+        return;
+      }
+      // System.out.println / print
+      m = stmt.match(/^System\.out\.(println|print)\s*\(([\s\S]*)\)\s*;?\s*$/);
+      if(m){
+        const val = evalExpr(m[2]);
+        out.push(String(val === undefined ? '' : val) + (m[1] === 'println' ? '\n' : ''));
+        return;
+      }
+      // cout << ... ;
+      m = stmt.match(/^cout\s*<<\s*([\s\S]*?)\s*;?\s*$/);
+      if(m){
+        const val = evalExpr(m[1]);
+        out.push(String(val === undefined ? '' : val));
+        return;
+      }
+      // echo ...;
+      m = stmt.match(/^echo\s+([\s\S]*?)\s*;?\s*$/);
+      if(m){
+        const val = evalExpr(m[1]);
+        out.push(String(val === undefined ? '' : val));
+        return;
+      }
+      // print(...) در PHP
+      m = stmt.match(/^print\s*\(([\s\S]*)\)\s*;?\s*$/);
+      if(m){
+        const val = evalExpr(m[1]);
+        out.push(String(val === undefined ? '' : val));
+        return;
+      }
+      // ========== انتساب متغیر ==========
+      // int x = 5;  یا  String s = "hi";  یا  $x = 5;
+      m = stmt.match(/^(?:int|double|float|long|short|byte|bool|boolean|String|string|var|let|const|auto)?\s*(\$?\w+)\s*=\s*([\s\S]+?)\s*;?\s*$/);
+      if(m && !/^(Console|System|cout|echo|print|if|for|while|switch|return|import|using|package|public|private|protected|static|void|class|new|this)/.test(stmt)){
+        vars[m[1]] = evalExpr(m[2]);
+        return;
+      }
+    }
+
+    const topStmts = splitStmts(src);
+    for(const s of topStmts) exec(s);
+
+    if(out.length === 0) return null;
+    let result = out.join('');
+    if(out.length >= MAX_OUT) result += '\n\n⚠️ خروجی محدود شد (بیش از ' + MAX_OUT + ' خط)';
+    return result;
+  }catch(e){
+    return null;
+  }
+}
+
+/* ============================================================
+   state ویرایشگر
+   ============================================================ */
+const editorState={};
+let currentEditorLang=null,currentSuggestions=[],activeSugIdx=-1,sugRange={start:0,end:0},_inputTimer=null;
+const WORD_CHARS=/[a-zA-Z0-9_<>.#$@]/;
+
 const EDITOR_CONFIGS={
 html:{label:"HTML",exec:"iframe",
 starter:`<!DOCTYPE html>
@@ -280,18 +514,15 @@ h1{color:#667eea}
 </html>`,
 sug:[
 {k:"html5",ins:"<!DOCTYPE html>\n<html lang=\"fa\" dir=\"rtl\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>|</title>\n</head>\n<body>\n\n</body>\n</html>",d:"ساختار کامل HTML5"},
-{k:"html",ins:"<html lang=\"fa\" dir=\"rtl\">\n|\n</html>",d:"صفحه"},
 {k:"head",ins:"<head>\n  |\n</head>",d:"سر صفحه"},
 {k:"body",ins:"<body>\n  |\n</body>",d:"بدن صفحه"},
 {k:"title",ins:"<title>|</title>",d:"عنوان"},
 {k:"meta",ins:"<meta charset=\"|\">",d:"متا"},
-{k:"link",ins:"<link rel=\"stylesheet\" href=\"|\">",d:"اتصال فایل"},
 {k:"b",ins:"<b>|</b>",d:"پررنگ"},
 {k:"strong",ins:"<strong>|</strong>",d:"قوی"},
 {k:"i",ins:"<i>|</i>",d:"ایتالیک"},
 {k:"em",ins:"<em>|</em>",d:"تاکید"},
 {k:"u",ins:"<u>|</u>",d:"زیرخط"},
-{k:"s",ins:"<s>|</s>",d:"خط‌خورده"},
 {k:"mark",ins:"<mark>|</mark>",d:"هایلایت"},
 {k:"br",ins:"<br>|",d:"شکست خط"},
 {k:"hr",ins:"<hr>|",d:"خط افقی"},
@@ -299,46 +530,27 @@ sug:[
 {k:"h1",ins:"<h1>|</h1>",d:"عنوان ۱"},
 {k:"h2",ins:"<h2>|</h2>",d:"عنوان ۲"},
 {k:"h3",ins:"<h3>|</h3>",d:"عنوان ۳"},
-{k:"h4",ins:"<h4>|</h4>",d:"عنوان ۴"},
-{k:"h5",ins:"<h5>|</h5>",d:"عنوان ۵"},
-{k:"h6",ins:"<h6>|</h6>",d:"عنوان ۶"},
 {k:"div",ins:"<div>|</div>",d:"بخش"},
 {k:"span",ins:"<span>|</span>",d:"تکه"},
 {k:"a",ins:"<a href=\"|\">متن لینک</a>",d:"لینک"},
 {k:"img",ins:"<img src=\"|\" alt=\"توضیح\">",d:"تصویر"},
-{k:"ul",ins:"<ul>\n  <li>|</li>\n  <li></li>\n</ul>",d:"لیست نامرتب"},
+{k:"ul",ins:"<ul>\n  <li>|</li>\n  <li></li>\n</ul>",d:"لیست"},
 {k:"ol",ins:"<ol>\n  <li>|</li>\n  <li></li>\n</ol>",d:"لیست مرتب"},
-{k:"li",ins:"<li>|</li>",d:"آیتم لیست"},
-{k:"dl",ins:"<dl>\n  <dt>|</dt>\n  <dd></dd>\n</dl>",d:"لیست توصیفی"},
-{k:"dt",ins:"<dt>|</dt>",d:"عنوان تعریف"},
-{k:"dd",ins:"<dd>|</dd>",d:"تعریف"},
+{k:"li",ins:"<li>|</li>",d:"آیتم"},
 {k:"table",ins:"<table border=\"1\">\n  <tr><th>|</th><th>ستون ۲</th></tr>\n  <tr><td></td><td></td></tr>\n</table>",d:"جدول"},
 {k:"tr",ins:"<tr>\n  <td>|</td>\n  <td></td>\n</tr>",d:"ردیف"},
 {k:"td",ins:"<td>|</td>",d:"سلول"},
-{k:"th",ins:"<th>|</th>",d:"سرستون"},
-{k:"form",ins:"<form>\n  <label>|</label>\n  <input type=\"text\" name=\"\">\n  <button type=\"submit\">ارسال</button>\n</form>",d:"فرم"},
-{k:"input",ins:"<input type=\"|\" name=\"\" placeholder=\"\">",d:"ورودی"},
-{k:"button",ins:"<button type=\"button\">|</button>",d:"دکمه"},
-{k:"label",ins:"<label>|</label>",d:"برچسب"},
-{k:"textarea",ins:"<textarea rows=\"|\" cols=\"30\"></textarea>",d:"متن چندخطی"},
-{k:"select",ins:"<select>\n  <option value=\"|\">گزینه ۱</option>\n  <option>گزینه ۲</option>\n</select>",d:"لیست کشویی"},
-{k:"option",ins:"<option value=\"|\">متن</option>",d:"گزینه"},
+{k:"form",ins:"<form>\n  <label>|</label>\n  <input type=\"text\">\n  <button>ارسال</button>\n</form>",d:"فرم"},
+{k:"input",ins:"<input type=\"|\">",d:"ورودی"},
+{k:"button",ins:"<button>|</button>",d:"دکمه"},
 {k:"style",ins:"<style>\n  |\n</style>",d:"استایل"},
 {k:"script",ins:"<script>\n  |\n<\/script>",d:"اسکریپت"},
-{k:"section",ins:"<section>\n  |\n</section>",d:"بخش معنایی"},
-{k:"article",ins:"<article>\n  |\n</article>",d:"مقاله"},
+{k:"section",ins:"<section>\n  |\n</section>",d:"بخش"},
 {k:"header",ins:"<header>\n  |\n</header>",d:"هدر"},
 {k:"footer",ins:"<footer>\n  |\n</footer>",d:"فوتر"},
 {k:"nav",ins:"<nav>\n  |\n</nav>",d:"ناوبری"},
-{k:"main",ins:"<main>\n  |\n</main>",d:"محتوا"},
-{k:"aside",ins:"<aside>\n  |\n</aside>",d:"کنار"},
-{k:"video",ins:"<video controls>\n  <source src=\"|\" type=\"video/mp4\">\n</video>",d:"ویدیو"},
-{k:"audio",ins:"<audio controls>\n  <source src=\"|\" type=\"audio/mpeg\">\n</audio>",d:"صدا"},
-{k:"iframe",ins:"<iframe src=\"|\"></iframe>",d:"قاب"},
+{k:"video",ins:"<video controls>\n  <source src=\"|\">\n</video>",d:"ویدیو"},
 {k:"canvas",ins:"<canvas id=\"|\" width=\"300\" height=\"200\"></canvas>",d:"بوم"},
-{k:"pre",ins:"<pre>|</pre>",d:"پیش‌فرمت"},
-{k:"code",ins:"<code>|</code>",d:"کد"},
-{k:"blockquote",ins:"<blockquote>|</blockquote>",d:"نقل قول"},
 {k:"کامنت",ins:"<!-- | -->",d:"کامنت"}
 ]},
 py:{label:"Python",exec:"pyodide",
@@ -359,24 +571,17 @@ sug:[
 {k:"def",ins:"def |():\n    ",d:"تابع"},
 {k:"class",ins:"class |:\n    def __init__(self):\n        pass",d:"کلاس"},
 {k:"return",ins:"return |",d:"بازگشت"},
-{k:"import",ins:"import |",d:"واردکردن ماژول"},
+{k:"import",ins:"import |",d:"import"},
 {k:"from",ins:"from | import ",d:"از ماژول"},
 {k:"try",ins:"try:\n    |\nexcept Exception as e:\n    print(e)",d:"try/except"},
-{k:"except",ins:"except Exception as e:\n    print(|)",d:"خطاگیر"},
-{k:"finally",ins:"finally:\n    |",d:"نهایتاً"},
-{k:"with",ins:"with open(\"|\", \"r\") as f:\n    ",d:"with"},
 {k:"lambda",ins:"lambda x: |",d:"لانبدا"},
 {k:"range",ins:"range(|)",d:"بازه"},
 {k:"len",ins:"len(|)",d:"طول"},
 {k:"str",ins:"str(|)",d:"رشته"},
-{k:"int",ins:"int(|)",d:"عدد صحیح"},
-{k:"float",ins:"float(|)",d:"اعشاری"},
+{k:"int",ins:"int(|)",d:"عدد"},
 {k:"list",ins:"list(|)",d:"لیست"},
 {k:"dict",ins:"dict(|)",d:"دیکشنری"},
-{k:"set",ins:"set(|)",d:"مجموعه"},
-{k:"tuple",ins:"tuple(|)",d:"تاپل"},
-{k:"append",ins:"|.append()",d:"افزودن به لیست"},
-{k:"f-string",ins:"f\"|{}\"",d:"رشته فرمت‌دار"},
+{k:"append",ins:"|.append()",d:"افزودن"},
 {k:"کامنت",ins:"# |",d:"کامنت"}
 ]},
 sql:{label:"SQL",exec:"sqljs",
@@ -389,39 +594,21 @@ INSERT INTO users VALUES (3, 'رضا', 22);
 SELECT * FROM users;`,
 sug:[
 {k:"select",ins:"SELECT | FROM table_name;",d:"انتخاب"},
-{k:"select *",ins:"SELECT * FROM |;",d:"همه ستون‌ها"},
-{k:"insert",ins:"INSERT INTO | (col1, col2) VALUES ('a', 'b');",d:"درج"},
-{k:"update",ins:"UPDATE | SET col = 'value' WHERE id = 1;",d:"بروزرسانی"},
+{k:"select *",ins:"SELECT * FROM |;",d:"همه"},
+{k:"insert",ins:"INSERT INTO | (col) VALUES ('val');",d:"درج"},
+{k:"update",ins:"UPDATE | SET col = 'val' WHERE id = 1;",d:"بروزرسانی"},
 {k:"delete",ins:"DELETE FROM | WHERE id = 1;",d:"حذف"},
-{k:"create",ins:"CREATE TABLE | (\n  id INTEGER PRIMARY KEY,\n  name TEXT\n);",d:"ساخت جدول"},
-{k:"drop",ins:"DROP TABLE |;",d:"حذف جدول"},
-{k:"alter",ins:"ALTER TABLE | ADD COLUMN new_col TEXT;",d:"تغییر جدول"},
+{k:"create",ins:"CREATE TABLE | (\n  id INTEGER PRIMARY KEY,\n  name TEXT\n);",d:"جدول"},
 {k:"where",ins:"WHERE |",d:"شرط"},
-{k:"from",ins:"FROM |",d:"از"},
-{k:"inner",ins:"INNER JOIN | ON a.id = b.a_id",d:"اتصال داخلی"},
-{k:"left",ins:"LEFT JOIN | ON a.id = b.a_id",d:"اتصال چپ"},
-{k:"right",ins:"RIGHT JOIN | ON a.id = b.a_id",d:"اتصال راست"},
-{k:"group",ins:"GROUP BY |",d:"گروه‌بندی"},
-{k:"order",ins:"ORDER BY | DESC",d:"مرتب‌سازی"},
-{k:"having",ins:"HAVING |",d:"شرط گروه"},
-{k:"limit",ins:"LIMIT |",d:"محدودیت"},
-{k:"distinct",ins:"SELECT DISTINCT | FROM table_name;",d:"یکتا"},
+{k:"inner",ins:"INNER JOIN | ON a.id = b.a_id",d:"اتصال"},
+{k:"group",ins:"GROUP BY |",d:"گروه"},
+{k:"order",ins:"ORDER BY | DESC",d:"مرتب"},
 {k:"count",ins:"SELECT COUNT(*) FROM |;",d:"شمارش"},
-{k:"sum",ins:"SELECT SUM(|) FROM table_name;",d:"جمع"},
-{k:"avg",ins:"SELECT AVG(|) FROM table_name;",d:"میانگین"},
-{k:"max",ins:"SELECT MAX(|) FROM table_name;",d:"بیشینه"},
-{k:"min",ins:"SELECT MIN(|) FROM table_name;",d:"کمینه"},
-{k:"like",ins:"WHERE col LIKE '|%'",d:"شبیه"},
-{k:"between",ins:"WHERE col BETWEEN | AND 10",d:"بین"},
-{k:"in",ins:"WHERE col IN (|)",d:"در لیست"},
 {k:"کامنت",ins:"-- |",d:"کامنت"}
 ]},
-php:{label:"PHP",exec:"ai",
+php:{label:"PHP",exec:"local",
 starter:`<?php
-$name = "دنیا";
-echo "سلام $name! 👋\\n";
-
-for ($i = 1; $i <= 5; $i++) {
+for ($i = 1; $i <= 1000; $i++) {
     echo "شماره $i\\n";
 }
 ?>`,
@@ -431,28 +618,19 @@ sug:[
 {k:"print",ins:"print(\"|\");",d:"چاپ"},
 {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
 {k:"else",ins:"else {\n    |\n}",d:"وگرنه"},
-{k:"elseif",ins:"elseif (|) {\n    \n}",d:"شرط دیگر"},
-{k:"for",ins:"for ($i = 0; $i < |; $i++) {\n    \n}",d:"حلقه for"},
-{k:"while",ins:"while (|) {\n    \n}",d:"حلقه while"},
-{k:"foreach",ins:"foreach ($| as $item) {\n    \n}",d:"حلقه foreach"},
+{k:"for",ins:"for ($i = 1; $i <= |; $i++) {\n    \n}",d:"for"},
+{k:"while",ins:"while (|) {\n    \n}",d:"while"},
+{k:"foreach",ins:"foreach ($| as $item) {\n    \n}",d:"foreach"},
 {k:"function",ins:"function |() {\n    \n}",d:"تابع"},
-{k:"class",ins:"class | {\n    public function __construct() {\n        \n    }\n}",d:"کلاس"},
+{k:"class",ins:"class | {\n    \n}",d:"کلاس"},
 {k:"return",ins:"return |;",d:"بازگشت"},
-{k:"include",ins:"include '|';",d:"شامل"},
-{k:"require",ins:"require '|';",d:"نیاز"},
-{k:"isset",ins:"isset(|)",d:"تعریف‌شده"},
-{k:"empty",ins:"empty(|)",d:"خالی"},
-{k:"try",ins:"try {\n    |\n} catch (Exception $e) {\n    echo $e->getMessage();\n}",d:"try/catch"},
 {k:"array",ins:"$arr = [|];",d:"آرایه"},
-{k:"assoc",ins:"$arr = ['key' => |];",d:"آرایه انجمنی"},
-{k:"session",ins:"session_start();\n$_SESSION['|'] = '';",d:"سشن"},
 {k:"کامنت",ins:"// |",d:"کامنت"}
 ]},
-java:{label:"Java",exec:"ai",
+java:{label:"Java",exec:"local",
 starter:`public class Main {
     public static void main(String[] args) {
-        System.out.println("سلام دنیا! 👋");
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 1; i <= 1000; i++) {
             System.out.println("شماره " + i);
         }
     }
@@ -462,30 +640,20 @@ sug:[
 {k:"class",ins:"public class | {\n    public static void main(String[] args) {\n        \n    }\n}",d:"کلاس"},
 {k:"print",ins:"System.out.print(|);",d:"چاپ"},
 {k:"println",ins:"System.out.println(|);",d:"چاپ خط"},
-{k:"int",ins:"int | = 0;",d:"عدد صحیح"},
+{k:"int",ins:"int | = 0;",d:"عدد"},
 {k:"string",ins:"String | = \"\";",d:"رشته"},
-{k:"double",ins:"double | = 0.0;",d:"اعشاری"},
-{k:"boolean",ins:"boolean | = true;",d:"بولین"},
 {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
-{k:"else",ins:"else {\n    |\n}",d:"وگرنه"},
-{k:"for",ins:"for (int i = 0; i < |; i++) {\n    \n}",d:"حلقه for"},
-{k:"while",ins:"while (|) {\n    \n}",d:"حلقه while"},
-{k:"foreach",ins:"for (var item : |) {\n    \n}",d:"حلقه پیشرفته"},
-{k:"switch",ins:"switch (|) {\n    case 1:\n        break;\n    default:\n        break;\n}",d:"چندشرط"},
-{k:"try",ins:"try {\n    |\n} catch (Exception e) {\n    e.printStackTrace();\n}",d:"try/catch"},
-{k:"arraylist",ins:"ArrayList<String> list = new ArrayList<>();\nlist.add(\"|\");",d:"لیست"},
-{k:"hashmap",ins:"HashMap<String, Integer> map = new HashMap<>();\nmap.put(\"|\", 1);",d:"نقشه"},
-{k:"new",ins:"new |()",d:"جدید"},
-{k:"import",ins:"import |;",d:"واردکردن"},
+{k:"for",ins:"for (int i = 1; i <= |; i++) {\n    \n}",d:"for"},
+{k:"while",ins:"while (|) {\n    \n}",d:"while"},
+{k:"switch",ins:"switch (|) {\n    case 1: break;\n    default: break;\n}",d:"سوییچ"},
 {k:"کامنت",ins:"// |",d:"کامنت"}
 ]},
-cs:{label:"C#",exec:"ai",
+cs:{label:"C#",exec:"local",
 starter:`using System;
 
 class Program {
     static void Main() {
-        Console.WriteLine("سلام دنیا! 👋");
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 1; i <= 1000; i++) {
             Console.WriteLine("شماره " + i);
         }
     }
@@ -495,121 +663,39 @@ sug:[
 {k:"class",ins:"using System;\n\nclass Program {\n    static void Main() {\n        |\n    }\n}",d:"کلاس"},
 {k:"print",ins:"Console.Write(|);",d:"چاپ"},
 {k:"writeline",ins:"Console.WriteLine(|);",d:"چاپ خط"},
-{k:"readline",ins:"Console.ReadLine()|",d:"خواندن"},
-{k:"int",ins:"int | = 0;",d:"عدد صحیح"},
+{k:"int",ins:"int | = 0;",d:"عدد"},
 {k:"string",ins:"string | = \"\";",d:"رشته"},
-{k:"double",ins:"double | = 0.0;",d:"اعشاری"},
-{k:"bool",ins:"bool | = true;",d:"بولین"},
-{k:"var",ins:"var | = ",d:"متغیر"},
 {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
-{k:"else",ins:"else {\n    |\n}",d:"وگرنه"},
-{k:"for",ins:"for (int i = 0; i < |; i++) {\n    \n}",d:"حلقه for"},
-{k:"foreach",ins:"foreach (var item in |) {\n    \n}",d:"حلقه foreach"},
-{k:"while",ins:"while (|) {\n    \n}",d:"حلقه while"},
-{k:"switch",ins:"switch (|) {\n    case 1:\n        break;\n    default:\n        break;\n}",d:"چندشرط"},
-{k:"try",ins:"try {\n    |\n} catch (Exception ex) {\n    Console.WriteLine(ex.Message);\n}",d:"try/catch"},
-{k:"list",ins:"var list = new List<string>();\nlist.Add(\"|\");",d:"لیست"},
-{k:"dict",ins:"var dict = new Dictionary<string, int>();\ndict[\"|\"] = 1;",d:"دیکشنری"},
-{k:"linq",ins:"var result = list.Where(x => |).ToList();",d:"لینک"},
-{k:"using",ins:"using |;",d:"واردکردن"},
+{k:"for",ins:"for (int i = 1; i <= |; i++) {\n    \n}",d:"for"},
+{k:"foreach",ins:"foreach (var item in |) {\n    \n}",d:"foreach"},
+{k:"while",ins:"while (|) {\n    \n}",d:"while"},
 {k:"کامنت",ins:"// |",d:"کامنت"}
 ]},
-cpp:{label:"C++",exec:"ai",
+cpp:{label:"C++",exec:"local",
 starter:`#include <iostream>
 using namespace std;
 
 int main() {
-    cout << "سلام دنیا! 👋" << endl;
-    for (int i = 1; i <= 5; i++) {
+    for (int i = 1; i <= 1000; i++) {
         cout << "شماره " << i << endl;
     }
     return 0;
 }`,
 sug:[
-{k:"include",ins:"#include <|>",d:"واردکردن هدر"},
+{k:"include",ins:"#include <|>",d:"هدر"},
 {k:"iostream",ins:"#include <iostream>\nusing namespace std;\n\nint main() {\n    |\n    return 0;\n}",d:"برنامه پایه"},
-{k:"main",ins:"int main() {\n    |\n    return 0;\n}",d:"متد اصلی"},
+{k:"main",ins:"int main() {\n    |\n    return 0;\n}",d:"main"},
 {k:"cout",ins:"cout << | << endl;",d:"چاپ"},
 {k:"cin",ins:"cin >> |;",d:"خواندن"},
-{k:"int",ins:"int | = 0;",d:"عدد صحیح"},
+{k:"int",ins:"int | = 0;",d:"عدد"},
 {k:"string",ins:"string | = \"\";",d:"رشته"},
-{k:"double",ins:"double | = 0.0;",d:"اعشاری"},
-{k:"bool",ins:"bool | = true;",d:"بولین"},
-{k:"auto",ins:"auto | = ",d:"خودکار"},
 {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
-{k:"else",ins:"else {\n    |\n}",d:"وگرنه"},
-{k:"for",ins:"for (int i = 0; i < |; i++) {\n    \n}",d:"حلقه for"},
-{k:"while",ins:"while (|) {\n    \n}",d:"حلقه while"},
+{k:"for",ins:"for (int i = 1; i <= |; i++) {\n    \n}",d:"for"},
+{k:"while",ins:"while (|) {\n    \n}",d:"while"},
 {k:"vector",ins:"vector<int> v = {|};",d:"وکتور"},
-{k:"map",ins:"map<string, int> m;\nm[\"|\"] = 1;",d:"نقشه"},
-{k:"set",ins:"set<int> s = {|};",d:"مجموعه"},
-{k:"class",ins:"class | {\npublic:\n    \n};",d:"کلاس"},
-{k:"try",ins:"try {\n    |\n} catch (const exception& e) {\n    cerr << e.what() << endl;\n}",d:"try/catch"},
 {k:"کامنت",ins:"// |",d:"کامنت"}
 ]}
 };
-
-/* ============================================================
-   پیش‌بارگذاری (preload) — از لحظه انتخاب زبان شروع می‌شه
-   ============================================================ */
-let pyodidePromise=null;
-let pyodideReady=false;
-let sqlPromise=null;
-let sqlReady=false;
-
-function preloadPyodide(){
-  if(pyodidePromise)return pyodidePromise;
-  pyodidePromise=(async()=>{
-    if(!window.loadPyodide){
-      await new Promise((res,rej)=>{
-        const s=document.createElement("script");
-        s.src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js";
-        s.onload=res;
-        s.onerror=()=>rej(new Error("بارگذاری Pyodide ناموفق"));
-        document.head.appendChild(s);
-      });
-    }
-    const py=await window.loadPyodide({
-      indexURL:"https://cdn.jsdelivr.net/pyodide/v0.26.1/full/",
-      stdout:()=>{},
-      stderr:()=>{}
-    });
-    pyodideReady=true;
-    return py;
-  })();
-  return pyodidePromise;
-}
-
-function preloadSqlJs(){
-  if(sqlPromise)return sqlPromise;
-  sqlPromise=(async()=>{
-    if(!window.initSqlJs){
-      await new Promise((res,rej)=>{
-        const s=document.createElement("script");
-        s.src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js";
-        s.onload=res;
-        s.onerror=()=>rej(new Error("بارگذاری sql.js ناموفق"));
-        document.head.appendChild(s);
-      });
-    }
-    const SQL=await window.initSqlJs({
-      locateFile:f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}`
-    });
-    sqlReady=true;
-    return SQL;
-  })();
-  return sqlPromise;
-}
-
-async function ensurePyodide(){return preloadPyodide();}
-async function ensureSqlJs(){return preloadSqlJs();}
-
-/* ============================================================
-   state ویرایشگر
-   ============================================================ */
-const editorState={};
-let currentEditorLang=null,currentSuggestions=[],activeSugIdx=-1,sugRange={start:0,end:0},_inputTimer=null;
-const WORD_CHARS=/[a-zA-Z0-9_<>.#$@]/;
 
 function pickLang(id){
   CL=langs.find(l=>l.id===id);CT=null;
@@ -624,7 +710,6 @@ function pickLang(id){
   if(hasEditor)document.getElementById("editorOpenBtn").textContent="🖥️ ویرایشگر "+EDITOR_CONFIGS[id].label;
   document.getElementById("tt").textContent=`${CL.i} ${CL.n} - یه موضوع انتخاب کن (${CL.t.length} موضوع):`;
   document.getElementById("tl").innerHTML=CL.t.map((x,i)=>`<div class="topic" onclick="pickTopic(${i})"><span>${x.t}</span><span class="tag ${x.l}">${x.l==="easy"?"آسان":x.l==="med"?"متوسط":"پیشرفته"}</span></div>`).join("");
-  // ⚡ پیش‌بارگذاری بی‌صدا در پس‌زمینه
   if(id==="py")preloadPyodide().catch(()=>{});
   else if(id==="sql")preloadSqlJs().catch(()=>{});
 }
@@ -646,8 +731,8 @@ async function ask(again){
   const out=document.getElementById("out"),actions=document.getElementById("actionsWrap"),isAgain=again===true;
   actions.classList.add("hide");
   const p=isAgain
-    ?`موضوع "${CT.t}" از ${CL.n} رو خیلی ساده و کوتاه توضیح بده. از مثال روزمره و تشبیه استفاده کن. کد کوتاه با توضیح خط به خط. حداکثر ۱۵۰ کلمه.`
-    :`موضوع "${CT.t}" از ${CL.n} رو کوتاه و کاربردی آموزش بده.\nساختار:\n## توضیح ساده (۲-۳ خط)\n## نمونه کد ۱\n\`\`\`\n[کد کوتاه]\n\`\`\`\n## نمونه کد ۲\n\`\`\`\n[کد کوتاه]\n\`\`\`\n## اشتباه رایج\n## نکته طلایی\nمختصر و مفید.`;
+    ?`موضوع "${CT.t}" از ${CL.n} رو خیلی ساده و کوتاه توضیح بده. حداکثر ۱۵۰ کلمه.`
+    :`موضوع "${CT.t}" از ${CL.n} رو کوتاه و کاربردی آموزش بده.\nساختار:\n## توضیح ساده\n## نمونه کد ۱\n\`\`\`\n[کد]\n\`\`\`\n## اشتباه رایج\n## نکته طلایی\nمختصر.`;
   out.className="load";out.textContent=`در حال آموزش ${CT.t}`;
   document.getElementById("res").scrollTop=0;
   try{
@@ -689,7 +774,7 @@ async function startQuiz(){
   document.getElementById("quizScore").textContent="";
   document.getElementById("quizQuestion").textContent="";
   document.getElementById("quizOptions").innerHTML='<div class="load" style="padding:20px">در حال آماده‌سازی</div>';
-  const p=`درباره "${CT.t}" از ${CL.n}، ۵ سوال سه‌گزینه‌ای بساز.\nفقط آرایه JSON بدون هیچ متن اضافه:\n[{"q":"سوال","o":["گزینه ۱","گزینه ۲","گزینه ۳"],"a":0}]`;
+  const p=`درباره "${CT.t}" از ${CL.n}، ۵ سوال سه‌گزینه‌ای بساز.\nفقط JSON بدون متن اضافه:\n[{"q":"سوال","o":["۱","۲","۳"],"a":0}]`;
   try{
     const d=await callAI({messages:[{role:"user",content:p}],temperature:0.8,max_tokens:1200,request_type:"quiz"});
     let txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||"").trim();
@@ -697,18 +782,16 @@ async function startQuiz(){
     const start=txt.indexOf("["),end=txt.lastIndexOf("]");
     if(start===-1||end===-1)throw new Error("پاسخ نامعتبر");
     const qs=JSON.parse(txt.slice(start,end+1));
-    if(!Array.isArray(qs)||!qs.length)throw new Error("سوالی ساخته نشد");
     quizData=qs;quizIdx=0;quizScore=0;showQuestion();
   }catch(e){
     if(e.isRateLimit){
       document.getElementById("quizProgress").textContent="";
-      document.getElementById("quizQuestion").innerHTML=`<span style="color:#e67e22">⚠️ ${e.remaining_minutes?e.remaining_minutes+" دقیقه دیگر امتحان کنید.":"لطفاً صبر کنید..."}</span>`;
-      document.getElementById("quizOptions").innerHTML='<div class="quiz-actions"><button class="btn" onclick="closeQuiz()">بستن</button></div>';
+      document.getElementById("quizQuestion").innerHTML=`<span style="color:#e67e22">⚠️ لطفاً صبر کنید</span>`;
     }else{
       document.getElementById("quizProgress").textContent="";
-      document.getElementById("quizQuestion").innerHTML=`<span style="color:#e74c3c">❌ خطا: ${esc(e.message)}</span>`;
-      document.getElementById("quizOptions").innerHTML='<div class="quiz-actions"><button class="btn" onclick="startQuiz()">🔄 تلاش دوباره</button></div>';
+      document.getElementById("quizQuestion").innerHTML=`<span style="color:#e74c3c">❌ خطا</span>`;
     }
+    document.getElementById("quizOptions").innerHTML='<div class="quiz-actions"><button class="btn" onclick="closeQuiz()">بستن</button></div>';
   }
 }
 function showQuestion(){
@@ -732,7 +815,7 @@ function showScore(){
   const msg=pct>=80?'عالی بودی!':pct>=50?'خوب بود، ادامه بده!':'بازم تمرین کن!';
   document.getElementById("quizProgress").textContent="";
   document.getElementById("quizScore").textContent="";
-  document.getElementById("quizQuestion").innerHTML=`<div style="text-align:center;padding:15px 0"><div style="font-size:54px;margin-bottom:12px">${emoji}</div><div style="font-size:16px;color:#555;margin-bottom:10px">${msg}</div><div style="font-size:20px;font-weight:bold;color:#667eea">${quizScore} از ${quizData.length}</div><div style="color:#888;margin-top:6px;font-size:14px">${pct}% درست</div></div>`;
+  document.getElementById("quizQuestion").innerHTML=`<div style="text-align:center;padding:15px 0"><div style="font-size:54px;margin-bottom:12px">${emoji}</div><div style="font-size:16px;color:#555;margin-bottom:10px">${msg}</div><div style="font-size:20px;font-weight:bold;color:#667eea">${quizScore} از ${quizData.length}</div></div>`;
   document.getElementById("quizOptions").innerHTML=`<div class="quiz-actions"><button class="btn" onclick="startQuiz()">🔄 آزمون جدید</button><button class="btn gray" onclick="closeQuiz()">بستن</button></div>`;
 }
 function closeQuiz(){document.getElementById("quiz").classList.add("hide");}
@@ -755,7 +838,6 @@ function openEditor(){
   ta.onkeydown=handleKeyDown;
   ta.onblur=function(){setTimeout(hideSuggest,180);};
   ta.onclick=function(){hideSuggest();};
-  // ⚡ شروع پیش‌بارگذاری در پس‌زمینه اگر قبلاً نشده
   if(id==="py"&&!pyodideReady)preloadPyodide().catch(()=>{});
   else if(id==="sql"&&!sqlReady)preloadSqlJs().catch(()=>{});
 }
@@ -791,14 +873,12 @@ function processInput(){
   let start=pos;
   while(start>start0&&WORD_CHARS.test(ta.value[start-1]))start--;
   const word=ta.value.substring(start,pos);
-  if(word.length<1){hideSuggest();return;}
-  if(word.startsWith("/")){hideSuggest();return;}
+  if(word.length<1||word.startsWith("/")){hideSuggest();return;}
   const cfg=EDITOR_CONFIGS[currentEditorLang],list=cfg.sug||[],lw=word.toLowerCase();
   const matches=[];
   for(let i=0;i<list.length;i++){
-    const s=list[i];
-    if(s.k.toLowerCase().startsWith(lw)){
-      matches.push(s);
+    if(list[i].k.toLowerCase().startsWith(lw)){
+      matches.push(list[i]);
       if(matches.length>=12)break;
     }
   }
@@ -821,8 +901,7 @@ function showSuggest(matches,start,end){
   box.onclick=function(e){
     const btn=e.target.closest(".sug-item");
     if(!btn)return;
-    const idx=parseInt(btn.getAttribute("data-idx"),10);
-    applySuggestion(currentSuggestions[idx]);
+    applySuggestion(currentSuggestions[parseInt(btn.getAttribute("data-idx"),10)]);
   };
 }
 
@@ -881,8 +960,54 @@ function showPreviewHTML(html){
 }
 function showOutputText(text,isError){
   const color=isError?"#ff6b6b":"#d4d4d4",safe=escapeHTML(text);
-  showPreviewHTML(`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Tahoma,sans-serif;padding:16px;background:#1e1e1e;color:${color};margin:0}pre{white-space:pre-wrap;word-break:break-word;font-family:'Courier New',Consolas,monospace;font-size:14px;line-height:1.9;direction:ltr;text-align:left;margin:0;color:${color}}</style></head><body><pre>${safe}</pre></body></html>`);
+  const lines=text.split('\n').length;
+  showPreviewHTML(`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><style>
+    *{box-sizing:border-box}
+    body{font-family:Tahoma,sans-serif;padding:0;margin:0;background:#1e1e1e;color:${color};min-height:100vh}
+    .hdr{background:#252526;padding:6px 12px;font-size:11px;color:#888;border-bottom:1px solid #333;font-family:Tahoma}
+    .hdr b{color:#4ec9b0}
+    pre{white-space:pre-wrap;word-break:break-word;font-family:'Courier New',Consolas,monospace;font-size:14px;line-height:1.8;direction:ltr;text-align:left;margin:0;padding:14px;color:${color}}
+  </style></head><body><div class="hdr">📺 خروجی — <b>${lines}</b> خط</div><pre>${safe}</pre></body></html>`);
 }
+
+let pyodidePromise=null,pyodideReady=false,sqlPromise=null,sqlReady=false;
+
+function preloadPyodide(){
+  if(pyodidePromise)return pyodidePromise;
+  pyodidePromise=(async()=>{
+    if(!window.loadPyodide){
+      await new Promise((res,rej)=>{
+        const s=document.createElement("script");
+        s.src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js";
+        s.onload=res;s.onerror=()=>rej(new Error("Pyodide load failed"));
+        document.head.appendChild(s);
+      });
+    }
+    const py=await window.loadPyodide({indexURL:"https://cdn.jsdelivr.net/pyodide/v0.26.1/full/"});
+    pyodideReady=true;
+    return py;
+  })();
+  return pyodidePromise;
+}
+function preloadSqlJs(){
+  if(sqlPromise)return sqlPromise;
+  sqlPromise=(async()=>{
+    if(!window.initSqlJs){
+      await new Promise((res,rej)=>{
+        const s=document.createElement("script");
+        s.src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js";
+        s.onload=res;s.onerror=()=>rej(new Error("sql.js load failed"));
+        document.head.appendChild(s);
+      });
+    }
+    const SQL=await window.initSqlJs({locateFile:f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}`});
+    sqlReady=true;
+    return SQL;
+  })();
+  return sqlPromise;
+}
+async function ensurePyodide(){return preloadPyodide();}
+async function ensureSqlJs(){return preloadSqlJs();}
 
 async function runPython(code){
   const pyodide=await ensurePyodide();
@@ -907,7 +1032,7 @@ finally:
   const err=pyodide.runPython("_stderr_buf.getvalue()")||"";
   const caught=pyodide.runPython("_err_text")||"";
   let result=out+err;
-  if(caught)result+=(result?"\n\n":"")+"❌ خطای پایتون:\n"+caught;
+  if(caught)result+=(result?"\n\n":"")+"❌ خطا:\n"+caught;
   return result||"(بدون خروجی)";
 }
 
@@ -928,14 +1053,7 @@ async function runSQL(code){
   }finally{try{db.close();}catch(e){}}
 }
 
-async function runWithAI(code,langLabel){
-  // پرامپت خیلی کوتاه برای پاسخ سریع‌تر
-  const p=`اجرای ${langLabel}. فقط خروجی:\n${code}`;
-  const d=await callAI({messages:[{role:"user",content:p}],temperature:0,max_tokens:300,request_type:"run_code"});
-  const txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||"").trim();
-  return txt||"(بدون خروجی)";
-}
-
+/* ============ اجرای کد ============ */
 async function runCode(){
   const id=currentEditorLang,cfg=EDITOR_CONFIGS[id];
   if(!cfg)return;
@@ -944,27 +1062,58 @@ async function runCode(){
   hideSuggest();
   document.getElementById("edOutput").classList.remove("hide");
   const runBtn=document.getElementById("edRunBtn");
+
+  // HTML: اجرای مستقیم
   if(cfg.exec==="iframe"){showPreviewHTML(code);return;}
-  // پیام بارگذاری هوشمند
-  if(cfg.exec==="pyodide"&&!pyodideReady)showOutputText("⏳ آماده‌سازی موتور پایتون (فقط بار اول)...",false);
-  else if(cfg.exec==="sqljs"&&!sqlReady)showOutputText("⏳ آماده‌سازی موتور SQL (فقط بار اول)...",false);
-  else showOutputText("⏳ در حال اجرا...",false);
-  runBtn.disabled=true;
-  const oldTxt=runBtn.textContent;
-  runBtn.textContent="⏳";
-  try{
-    let output="";
-    if(cfg.exec==="pyodide")output=await runPython(code);
-    else if(cfg.exec==="sqljs")output=await runSQL(code);
-    else if(cfg.exec==="ai")output=await runWithAI(code,cfg.label);
-    showOutputText(output,false);
-  }catch(e){
-    let msg="❌ خطا: "+(e.message||e);
-    if(e.isRateLimit)msg="⚠️ تعداد درخواست‌ها زیاد است. "+(e.remaining_minutes?e.remaining_minutes+" دقیقه دیگر امتحان کنید.":"");
-    showOutputText(msg,true);
-  }finally{
-    runBtn.disabled=false;
-    runBtn.textContent=oldTxt;
+
+  // Python / SQL: موتور واقعی
+  if(cfg.exec==="pyodide"){
+    if(!pyodideReady)showOutputText("⏳ بارگذاری موتور پایتون (فقط بار اول)...",false);
+    else showOutputText("⏳ در حال اجرا...",false);
+    runBtn.disabled=true;const oldTxt=runBtn.textContent;runBtn.textContent="⏳";
+    try{
+      const output=await runPython(code);
+      showOutputText(output,false);
+    }catch(e){showOutputText("❌ خطا: "+(e.message||e),true);}
+    finally{runBtn.disabled=false;runBtn.textContent=oldTxt;}
+    return;
+  }
+  if(cfg.exec==="sqljs"){
+    if(!sqlReady)showOutputText("⏳ بارگذاری موتور SQL (فقط بار اول)...",false);
+    else showOutputText("⏳ در حال اجرا...",false);
+    runBtn.disabled=true;const oldTxt=runBtn.textContent;runBtn.textContent="⏳";
+    try{
+      const output=await runSQL(code);
+      showOutputText(output,false);
+    }catch(e){showOutputText("❌ خطا: "+(e.message||e),true);}
+    finally{runBtn.disabled=false;runBtn.textContent=oldTxt;}
+    return;
+  }
+
+  // ⚡ local: اجرای فوری با مفسر داخلی - بدون AI
+  if(cfg.exec==="local"){
+    const t0=performance.now();
+    const result=localInterpret(code,id);
+    const dt=Math.round(performance.now()-t0);
+    if(result!==null){
+      showOutputText(result,false);
+      return;
+    }
+    // اگه مفسر نتونست → برو سراغ AI
+    showOutputText("⏳ در حال پردازش با AI (کد پیچیده)...",false);
+    runBtn.disabled=true;const oldTxt2=runBtn.textContent;runBtn.textContent="⏳";
+    try{
+      const p=`تو مفسر دقیق ${cfg.label} هستی. کد زیر را اجرا کن و فقط خروجی خام (هر خط یک خط) بده. بدون توضیح، بدون backtick.\n\n${code}`;
+      const d=await callAI({messages:[{role:"user",content:p}],temperature:0,max_tokens:3000,request_type:"run_code"});
+      const txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||"").trim();
+      showOutputText(txt||"(بدون خروجی)",false);
+    }catch(e){
+      let msg="❌ خطا: "+(e.message||e);
+      if(e.isRateLimit)msg="⚠️ تعداد درخواست‌ها زیاد است.";
+      showOutputText(msg,true);
+    }
+    finally{runBtn.disabled=false;runBtn.textContent=oldTxt2;}
+    return;
   }
 }
 
@@ -979,7 +1128,7 @@ async function aiHelp(){
   const oldTxt=btn.textContent;
   btn.textContent="...";
   hideSuggest();
-  const p=`دستیار ${cfg.label}. فقط کد آماده. بدون توضیح.\n\nدرخواست: ${prompt}\n\nکد فعلی:\n${currentCode}`;
+  const p=`دستیار ${cfg.label}. فقط کد کامل. بدون توضیح.\n\nدرخواست: ${prompt}\n\nکد فعلی:\n${currentCode}`;
   try{
     const d=await callAI({messages:[{role:"user",content:p}],temperature:0.3,max_tokens:2500,request_type:"editor_ai"});
     let txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||"").trim();
@@ -991,10 +1140,10 @@ async function aiHelp(){
     if(cfg.exec==="iframe")runCode();
     else{
       document.getElementById("edOutput").classList.remove("hide");
-      showOutputText("✓ کد تولید شد. برای مشاهده خروجی، روی دکمه «▶ اجرا» بزنید.",false);
+      showOutputText("✓ کد تولید شد. روی ▶ اجرا بزن.",false);
     }
   }catch(e){
-    if(e.isRateLimit)alert("⚠️ تعداد درخواست‌ها زیاد است. "+(e.remaining_minutes?e.remaining_minutes+" دقیقه دیگر امتحان کنید.":""));
+    if(e.isRateLimit)alert("⚠️ تعداد درخواست‌ها زیاد است.");
     else alert("❌ "+e.message);
   }finally{
     input.disabled=false;btn.disabled=false;btn.textContent=oldTxt;
@@ -1002,4 +1151,4 @@ async function aiHelp(){
 }
 </script>
 </body>
-                                 </html>
+  </html>
