@@ -201,34 +201,90 @@ const BROWSER_FP = (function() {
   } catch(e){return "unknown";}
 })();
 
-async function callAI(payload){
-  const res = await fetch(WORKER_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      messages:payload.messages,
-      temperature:payload.temperature!==undefined?payload.temperature:0.3,
-      top_p:0.95,
-      max_tokens:payload.max_tokens||900,
-      model:payload.model||"gpt-4o-mini",
-      stream:false,
-      fingerprint:BROWSER_FP,
-      request_type:payload.request_type||"unknown",
-      language:CL?CL.id:"",
-      topic:CT?CT.t:""
-    })
-  });
-  if(res.status===429){
-    const err=await res.json();
-    const e2=new Error(err.error||"تعداد درخواست‌ها زیاد است");
-    e2.isRateLimit=true;e2.remaining_minutes=err.remaining_minutes||10;
-    throw e2;
+/* ============================================================
+   ⚡ callAI مقاوم در برابر 504 / 502 / 524 / متن غیر JSON
+   ============================================================ */
+async function callAI(payload, _retry){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        messages: payload.messages,
+        temperature: payload.temperature !== undefined ? payload.temperature : 0.3,
+        top_p: 0.95,
+        max_tokens: payload.max_tokens || 900,
+        model: payload.model || "gpt-4o-mini",
+        stream: false,
+        fingerprint: BROWSER_FP,
+        request_type: payload.request_type || "unknown",
+        language: CL ? CL.id : "",
+        topic: CT ? CT.t : ""
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    const raw = await res.text();
+    let data = null;
+    try {
+      data = JSON.parse(raw);
+    } catch(_) {
+      // سرور JSON نداد (504 / 502 / 524 / HTML error page)
+      const isGatewayErr = (res.status === 504 || res.status === 502 || res.status === 503 || res.status === 524);
+      const looksGatewayErr = /error code:\s*5\d\d|504|502|524|timeout|gateway/i.test(raw);
+      if (!_retry && (isGatewayErr || looksGatewayErr)) {
+        await new Promise(r => setTimeout(r, 1200));
+        return callAI(payload, true);
+      }
+      if (res.status === 429) {
+        const e2 = new Error("تعداد درخواست‌ها زیاد است");
+        e2.isRateLimit = true;
+        e2.remaining_minutes = 10;
+        throw e2;
+      }
+      if (isGatewayErr) {
+        throw new Error("سرور کند بود. لطفاً دوباره تلاش کن.");
+      }
+      throw new Error("پاسخ نامعتبر از سرور (کد " + res.status + ")");
+    }
+
+    if (res.status === 429 || (data && data.error && data.rate_limit)) {
+      const e2 = new Error((data && data.error) || "تعداد درخواست‌ها زیاد است");
+      e2.isRateLimit = true;
+      e2.remaining_minutes = (data && data.remaining_minutes) || 10;
+      throw e2;
+    }
+
+    if (!res.ok) {
+      if (!_retry && res.status >= 500) {
+        await new Promise(r => setTimeout(r, 1200));
+        return callAI(payload, true);
+      }
+      throw new Error((data && data.error) || ("خطای سرور: " + res.status));
+    }
+
+    return data;
+
+  } catch(e) {
+    clearTimeout(timeoutId);
+    if (e.name === "AbortError") {
+      if (!_retry) {
+        await new Promise(r => setTimeout(r, 800));
+        return callAI(payload, true);
+      }
+      throw new Error("درخواست طولانی شد. لطفاً دوباره تلاش کن.");
+    }
+    if (!_retry && (e.message === "Failed to fetch" || e.message === "NetworkError when attempting to fetch resource." || e.message === "Load failed")) {
+      await new Promise(r => setTimeout(r, 1000));
+      return callAI(payload, true);
+    }
+    throw e;
   }
-  if(!res.ok){
-    const err=await res.json().catch(()=>({}));
-    throw new Error(err.error||"خطا در ارتباط با سرور");
-  }
-  return res.json();
 }
 
 const langs=[
@@ -267,7 +323,6 @@ document.getElementById("langs").innerHTML=langs.map(l=>`<div class="card" id="c
 function localInterpret(code, lang){
   try{
     let src = code;
-    // حذف کامنت‌ها
     src = src.replace(/\/\*[\s\S]*?\*\//g, '');
     if(lang === 'php'){
       src = src.replace(/\/\/[^\n]*/g, '').replace(/#[^\n]*/g, '');
@@ -278,7 +333,6 @@ function localInterpret(code, lang){
       src = src.replace(/using\s+[\w.]+\s*;/g, '');
       src = src.replace(/package\s+[\w.]+\s*;/g, '');
     }
-    // استخراج بدنه Main/main
     const mainRx = /\b(?:Main|main)\s*\([^)]*\)\s*\{/;
     const mm = src.match(mainRx);
     if(mm){
@@ -332,14 +386,12 @@ function localInterpret(code, lang){
     function evalExpr(expr){
       expr = String(expr).trim();
       if(!expr) return '';
-      // استخراج رشته‌ها به placeholder
       const strings = [];
       expr = expr.replace(/"((?:[^"\\]|\\.)*)"/g, (m, inner) => {
         const idx = strings.length;
         strings.push(inner);
         return `__STR${idx}__`;
       });
-      // جایگزینی متغیرها
       for(const k in vars){
         const esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         if(lang === 'php'){
@@ -348,10 +400,8 @@ function localInterpret(code, lang){
           expr = expr.replace(new RegExp('\\b' + esc + '\\b', 'g'), () => JSON.stringify(vars[k]));
         }
       }
-      // بازگردانی رشته‌ها با درون‌یابی
       expr = expr.replace(/__STR(\d+)__/g, (m, i) => {
         let s = strings[parseInt(i)];
-        // پردازش escape
         s = s.replace(/\\(.)/g, (mm, c) => {
           if(c === 'n') return '\n';
           if(c === 't') return '\t';
@@ -360,7 +410,6 @@ function localInterpret(code, lang){
           if(c === '"') return '"';
           return c;
         });
-        // درون‌یابی
         if(lang === 'php'){
           s = s.replace(/\$(\w+)/g, (_, v) => vars[v] !== undefined ? String(vars[v]) : '');
         } else if(lang === 'cs' || lang === 'java'){
@@ -368,7 +417,6 @@ function localInterpret(code, lang){
         }
         return JSON.stringify(s);
       });
-      // پردازش‌های خاص زبان
       if(lang === 'cpp'){
         expr = expr.replace(/\bendl\b/g, '"\\n"');
         expr = expr.replace(/<</g, '+');
@@ -385,7 +433,6 @@ function localInterpret(code, lang){
       if(out.length >= MAX_OUT) return;
       stmt = stmt.trim();
       if(!stmt || stmt === 'return 0' || stmt === 'return 0;') return;
-      // for
       let m = stmt.match(/^for\s*\(\s*(?:int|var|let|long|double|float|bool|boolean|String|string)?\s*(\$?\w+)\s*=\s*([^;]+);\s*([\s\S]+?);\s*([\s\S]+?)\s*\)\s*\{([\s\S]*)\}$/);
       if(m){
         const [, vName, initVal, cond, incr, body] = m;
@@ -410,7 +457,6 @@ function localInterpret(code, lang){
         }
         return;
       }
-      // while
       m = stmt.match(/^while\s*\(\s*([\s\S]+?)\s*\)\s*\{([\s\S]*)\}$/);
       if(m){
         const [, cond, body] = m;
@@ -421,7 +467,6 @@ function localInterpret(code, lang){
         }
         return;
       }
-      // if
       m = stmt.match(/^if\s*\(\s*([\s\S]+?)\s*\)\s*\{([\s\S]*?)\}\s*(?:else\s*\{([\s\S]*)\})?$/);
       if(m){
         const [, cond, thenBody, elseBody] = m;
@@ -432,43 +477,36 @@ function localInterpret(code, lang){
         }
         return;
       }
-      // Console.WriteLine / Write
       m = stmt.match(/^Console\.(WriteLine|Write)\s*\(([\s\S]*)\)\s*;?\s*$/);
       if(m){
         const val = evalExpr(m[2]);
         out.push(String(val === undefined ? '' : val) + (m[1] === 'WriteLine' ? '\n' : ''));
         return;
       }
-      // System.out.println / print
       m = stmt.match(/^System\.out\.(println|print)\s*\(([\s\S]*)\)\s*;?\s*$/);
       if(m){
         const val = evalExpr(m[2]);
         out.push(String(val === undefined ? '' : val) + (m[1] === 'println' ? '\n' : ''));
         return;
       }
-      // cout << ... ;
       m = stmt.match(/^cout\s*<<\s*([\s\S]*?)\s*;?\s*$/);
       if(m){
         const val = evalExpr(m[1]);
         out.push(String(val === undefined ? '' : val));
         return;
       }
-      // echo ...;
       m = stmt.match(/^echo\s+([\s\S]*?)\s*;?\s*$/);
       if(m){
         const val = evalExpr(m[1]);
         out.push(String(val === undefined ? '' : val));
         return;
       }
-      // print(...) در PHP
       m = stmt.match(/^print\s*\(([\s\S]*)\)\s*;?\s*$/);
       if(m){
         const val = evalExpr(m[1]);
         out.push(String(val === undefined ? '' : val));
         return;
       }
-      // ========== انتساب متغیر ==========
-      // int x = 5;  یا  String s = "hi";  یا  $x = 5;
       m = stmt.match(/^(?:int|double|float|long|short|byte|bool|boolean|String|string|var|let|const|auto)?\s*(\$?\w+)\s*=\s*([\s\S]+?)\s*;?\s*$/);
       if(m && !/^(Console|System|cout|echo|print|if|for|while|switch|return|import|using|package|public|private|protected|static|void|class|new|this)/.test(stmt)){
         vars[m[1]] = evalExpr(m[2]);
@@ -1053,7 +1091,6 @@ async function runSQL(code){
   }finally{try{db.close();}catch(e){}}
 }
 
-/* ============ اجرای کد ============ */
 async function runCode(){
   const id=currentEditorLang,cfg=EDITOR_CONFIGS[id];
   if(!cfg)return;
@@ -1063,10 +1100,8 @@ async function runCode(){
   document.getElementById("edOutput").classList.remove("hide");
   const runBtn=document.getElementById("edRunBtn");
 
-  // HTML: اجرای مستقیم
   if(cfg.exec==="iframe"){showPreviewHTML(code);return;}
 
-  // Python / SQL: موتور واقعی
   if(cfg.exec==="pyodide"){
     if(!pyodideReady)showOutputText("⏳ بارگذاری موتور پایتون (فقط بار اول)...",false);
     else showOutputText("⏳ در حال اجرا...",false);
@@ -1090,16 +1125,12 @@ async function runCode(){
     return;
   }
 
-  // ⚡ local: اجرای فوری با مفسر داخلی - بدون AI
   if(cfg.exec==="local"){
-    const t0=performance.now();
     const result=localInterpret(code,id);
-    const dt=Math.round(performance.now()-t0);
     if(result!==null){
       showOutputText(result,false);
       return;
     }
-    // اگه مفسر نتونست → برو سراغ AI
     showOutputText("⏳ در حال پردازش با AI (کد پیچیده)...",false);
     runBtn.disabled=true;const oldTxt2=runBtn.textContent;runBtn.textContent="⏳";
     try{
