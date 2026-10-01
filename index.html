@@ -80,10 +80,23 @@ button.btn.gray{background:#eee;color:#333}
 .ed-ai button{padding:10px 16px;background:#667eea;color:#fff;border:none;border-radius:9px;font-family:Tahoma;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap;transition:background .15s}
 .ed-ai button:hover{background:#5568d3}
 .ed-ai button:disabled{background:#aaa;cursor:wait}
-.ed-body{flex:1;display:flex;overflow:hidden;min-height:0}
+.ed-body{flex:1;display:flex;overflow:hidden;min-height:0;position:relative}
 #edCode{flex:1;padding:15px;border:none;border-left:2px solid #eaeaea;font-family:'Courier New',Consolas,monospace;font-size:13px;line-height:1.6;direction:ltr;text-align:left;resize:none;outline:none;background:#fafafa;color:#222}
 #edPreview{flex:1;border:none;background:#fff}
-@media(max-width:600px){body{padding:10px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}.card{padding:16px 8px}.card .ico{font-size:28px}.card .name{font-size:13px}.result-body{padding:15px}#out pre{padding:12px;font-size:12px}.result-header{padding:10px 12px}.back-btn{padding:8px 14px;font-size:13px}.topic-title-bar{font-size:14px}.topic{padding:12px 14px}.btn-act{font-size:13px;padding:10px 14px}.ed-body{flex-direction:column}#edCode{border-left:none;border-bottom:2px solid #eaeaea}.ed-ai button{padding:9px 12px;font-size:12px}}
+
+/* ====== پیشنهاد خودکار کد (Autocomplete) ====== */
+.sug-box{position:fixed;background:#fff;border:1px solid #d8dbe6;border-radius:10px;box-shadow:0 8px 24px rgba(60,70,120,.22);max-height:210px;overflow-y:auto;z-index:500;min-width:200px;max-width:300px;font-family:Tahoma;padding:4px 0;animation:sugIn .12s ease-out}
+@keyframes sugIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.sug-box::-webkit-scrollbar{width:6px}
+.sug-box::-webkit-scrollbar-track{background:#f0f0f0}
+.sug-box::-webkit-scrollbar-thumb{background:#c5cad8;border-radius:10px}
+.sug-item{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:7px 12px;border:none;background:transparent;font-family:Tahoma;font-size:12px;cursor:pointer;direction:ltr;color:#333;transition:background .1s;text-align:left}
+.sug-item:hover,.sug-item.active{background:#eef2ff}
+.sug-item.active{background:#dde6ff}
+.sug-code{font-family:'Courier New',Consolas,monospace;color:#667eea;font-weight:bold;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+.sug-desc{color:#95a0b8;font-size:10px;white-space:nowrap;font-family:Tahoma;direction:rtl;flex-shrink:0}
+
+@media(max-width:600px){body{padding:10px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}.card{padding:16px 8px}.card .ico{font-size:28px}.card .name{font-size:13px}.result-body{padding:15px}#out pre{padding:12px;font-size:12px}.result-header{padding:10px 12px}.back-btn{padding:8px 14px;font-size:13px}.topic-title-bar{font-size:14px}.topic{padding:12px 14px}.btn-act{font-size:13px;padding:10px 14px}.ed-body{flex-direction:column}#edCode{border-left:none;border-bottom:2px solid #eaeaea}.ed-ai button{padding:9px 12px;font-size:12px}.sug-box{max-width:250px}.sug-code{max-width:130px}}
 </style>
 </head>
 <body>
@@ -133,6 +146,7 @@ button.btn.gray{background:#eee;color:#333}
 <div class="ed-body">
 <textarea id="edCode" spellcheck="false"></textarea>
 <iframe id="edPreview"></iframe>
+<div id="edSuggest" class="sug-box hide"></div>
 </div>
 </div>
 <script>
@@ -227,13 +241,12 @@ let quizData=[],quizIdx=0,quizScore=0;
 document.getElementById("langs").innerHTML=langs.map(l=>`<div class="card" id="card-${l.id}" onclick="pickLang('${l.id}')"><span class="ico">${l.i}</span><span class="name">${l.n}</span></div>`).join("");
 
 // ============================================================
-// تنظیمات ویرایشگرها برای هر زبان
+// تنظیمات ویرایشگرها + پیشنهادهای خودکار هر زبان
 // ============================================================
 const EDITOR_CONFIGS = {
   html: {
     label: "HTML",
-    lang: "html",
-    ext: "html",
+    exec: "iframe",
     starter: `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -249,24 +262,79 @@ h1{color:#667eea}
 <p>اینجا کد HTML خودت رو بنویس یا از AI بخواه برات بسازه</p>
 </body>
 </html>`,
-    exec: "iframe"
+    sug: [
+      {k:"html5",ins:"<!DOCTYPE html>\n<html lang=\"fa\" dir=\"rtl\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>|</title>\n</head>\n<body>\n\n</body>\n</html>",d:"ساختار کامل"},
+      {k:"head",ins:"<head>\n  |\n</head>",d:"سر"},
+      {k:"body",ins:"<body>\n  |\n</body>",d:"بدن"},
+      {k:"title",ins:"<title>|</title>",d:"عنوان"},
+      {k:"meta",ins:"<meta charset=\"|\">",d:"متا"},
+      {k:"b",ins:"<b>|</b>",d:"پررنگ"},
+      {k:"strong",ins:"<strong>|</strong>",d:"قوی"},
+      {k:"i",ins:"<i>|</i>",d:"ایتالیک"},
+      {k:"em",ins:"<em>|</em>",d:"تاکید"},
+      {k:"u",ins:"<u>|</u>",d:"زیرخط"},
+      {k:"mark",ins:"<mark>|</mark>",d:"هایلایت"},
+      {k:"br",ins:"<br>|",d:"شکست خط"},
+      {k:"hr",ins:"<hr>|",d:"خط"},
+      {k:"p",ins:"<p>|</p>",d:"پاراگراف"},
+      {k:"h1",ins:"<h1>|</h1>",d:"h1"},
+      {k:"h2",ins:"<h2>|</h2>",d:"h2"},
+      {k:"h3",ins:"<h3>|</h3>",d:"h3"},
+      {k:"div",ins:"<div>|</div>",d:"بخش"},
+      {k:"span",ins:"<span>|</span>",d:"تکه"},
+      {k:"a",ins:"<a href=\"|\">لینک</a>",d:"لینک"},
+      {k:"img",ins:"<img src=\"|\" alt=\"توضیح\">",d:"تصویر"},
+      {k:"ul",ins:"<ul>\n  <li>|</li>\n  <li></li>\n</ul>",d:"لیست"},
+      {k:"ol",ins:"<ol>\n  <li>|</li>\n  <li></li>\n</ol>",d:"لیست مرتب"},
+      {k:"li",ins:"<li>|</li>",d:"آیتم"},
+      {k:"table",ins:"<table border=\"1\">\n  <tr><th>|</th><th>ب</th></tr>\n  <tr><td></td><td></td></tr>\n</table>",d:"جدول"},
+      {k:"tr",ins:"<tr>\n  <td>|</td>\n  <td></td>\n</tr>",d:"ردیف"},
+      {k:"td",ins:"<td>|</td>",d:"سلول"},
+      {k:"form",ins:"<form>\n  <label>|</label>\n  <input type=\"text\">\n  <button>ارسال</button>\n</form>",d:"فرم"},
+      {k:"input",ins:"<input type=\"|\">",d:"ورودی"},
+      {k:"button",ins:"<button>|</button>",d:"دکمه"},
+      {k:"style",ins:"<style>\n  |\n</style>",d:"استایل"},
+      {k:"script",ins:"<script>\n  |\n<\/script>",d:"اسکریپت"},
+      {k:"section",ins:"<section>\n  |\n</section>",d:"بخش"},
+      {k:"header",ins:"<header>\n  |\n</header>",d:"هدر"},
+      {k:"footer",ins:"<footer>\n  |\n</footer>",d:"فوتر"},
+      {k:"nav",ins:"<nav>\n  |\n</nav>",d:"ناوبری"},
+      {k:"کامنت",ins:"<!-- | -->",d:"کامنت"}
+    ]
   },
   py: {
     label: "Python",
-    lang: "python",
-    ext: "py",
+    exec: "pyodide",
     starter: `# کد پایتون خود را بنویسید
 name = "دنیا"
 print(f"سلام {name}! 👋")
 
 for i in range(1, 6):
     print(f"شماره {i}")`,
-    exec: "pyodide"
+    sug: [
+      {k:"print",ins:"print(|)",d:"چاپ"},
+      {k:"input",ins:"input(\"|\")",d:"ورودی"},
+      {k:"if",ins:"if |:\n    ",d:"شرط"},
+      {k:"elif",ins:"elif |:\n    ",d:"شرط دیگر"},
+      {k:"else",ins:"else:\n    |",d:"وگرنه"},
+      {k:"for",ins:"for i in range(|):\n    ",d:"for"},
+      {k:"while",ins:"while |:\n    ",d:"while"},
+      {k:"def",ins:"def |():\n    ",d:"تابع"},
+      {k:"class",ins:"class |:\n    def __init__(self):\n        pass",d:"کلاس"},
+      {k:"return",ins:"return |",d:"بازگشت"},
+      {k:"import",ins:"import |",d:"import"},
+      {k:"try",ins:"try:\n    |\nexcept Exception as e:\n    print(e)",d:"try/except"},
+      {k:"lambda",ins:"lambda x: |",d:"لانبدا"},
+      {k:"range",ins:"range(|)",d:"بازه"},
+      {k:"len",ins:"len(|)",d:"طول"},
+      {k:"list",ins:"list(|)",d:"لیست"},
+      {k:"dict",ins:"dict(|)",d:"دیکشنری"},
+      {k:"کامنت",ins:"# |",d:"کامنت"}
+    ]
   },
   sql: {
     label: "SQL",
-    lang: "sql",
-    ext: "sql",
+    exec: "sqljs",
     starter: `-- کوئری SQL خود را بنویسید
 CREATE TABLE users (id INTEGER, name TEXT, age INTEGER);
 INSERT INTO users VALUES (1, 'علی', 25);
@@ -274,12 +342,22 @@ INSERT INTO users VALUES (2, 'مریم', 30);
 INSERT INTO users VALUES (3, 'رضا', 22);
 
 SELECT * FROM users;`,
-    exec: "sqljs"
+    sug: [
+      {k:"select",ins:"SELECT | FROM table_name;",d:"انتخاب"},
+      {k:"select *",ins:"SELECT * FROM |;",d:"همه"},
+      {k:"insert",ins:"INSERT INTO | (col) VALUES ('val');",d:"درج"},
+      {k:"update",ins:"UPDATE | SET col = 'val' WHERE id = 1;",d:"بروز"},
+      {k:"delete",ins:"DELETE FROM | WHERE id = 1;",d:"حذف"},
+      {k:"create",ins:"CREATE TABLE | (\n  id INTEGER PRIMARY KEY,\n  name TEXT\n);",d:"جدول"},
+      {k:"where",ins:"WHERE |",d:"شرط"},
+      {k:"group",ins:"GROUP BY |",d:"گروه"},
+      {k:"order",ins:"ORDER BY | DESC",d:"مرتب"},
+      {k:"کامنت",ins:"-- |",d:"کامنت"}
+    ]
   },
   php: {
     label: "PHP",
-    lang: "php",
-    ext: "php",
+    exec: "ai",
     starter: `<?php
 $name = "دنیا";
 echo "سلام $name! 👋\\n";
@@ -288,12 +366,22 @@ for ($i = 1; $i <= 5; $i++) {
     echo "شماره $i\\n";
 }
 ?>`,
-    exec: "ai"
+    sug: [
+      {k:"php",ins:"<?php\n|\n?>",d:"تگ PHP"},
+      {k:"echo",ins:"echo \"|\";",d:"چاپ"},
+      {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
+      {k:"else",ins:"else {\n    |\n}",d:"وگرنه"},
+      {k:"for",ins:"for ($i = 1; $i <= |; $i++) {\n    \n}",d:"for"},
+      {k:"while",ins:"while (|) {\n    \n}",d:"while"},
+      {k:"foreach",ins:"foreach ($| as $item) {\n    \n}",d:"foreach"},
+      {k:"function",ins:"function |() {\n    \n}",d:"تابع"},
+      {k:"class",ins:"class | {\n    \n}",d:"کلاس"},
+      {k:"کامنت",ins:"// |",d:"کامنت"}
+    ]
   },
   java: {
     label: "Java",
-    lang: "java",
-    ext: "java",
+    exec: "ai",
     starter: `public class Main {
     public static void main(String[] args) {
         System.out.println("سلام دنیا! 👋");
@@ -302,12 +390,22 @@ for ($i = 1; $i <= 5; $i++) {
         }
     }
 }`,
-    exec: "ai"
+    sug: [
+      {k:"main",ins:"public static void main(String[] args) {\n    |\n}",d:"متد اصلی"},
+      {k:"class",ins:"public class | {\n    public static void main(String[] args) {\n        \n    }\n}",d:"کلاس"},
+      {k:"print",ins:"System.out.print(|);",d:"چاپ"},
+      {k:"println",ins:"System.out.println(|);",d:"چاپ خط"},
+      {k:"int",ins:"int | = 0;",d:"عدد"},
+      {k:"string",ins:"String | = \"\";",d:"رشته"},
+      {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
+      {k:"for",ins:"for (int i = 1; i <= |; i++) {\n    \n}",d:"for"},
+      {k:"while",ins:"while (|) {\n    \n}",d:"while"},
+      {k:"کامنت",ins:"// |",d:"کامنت"}
+    ]
   },
   cs: {
     label: "C#",
-    lang: "csharp",
-    ext: "cs",
+    exec: "ai",
     starter: `using System;
 
 class Program {
@@ -318,12 +416,22 @@ class Program {
         }
     }
 }`,
-    exec: "ai"
+    sug: [
+      {k:"main",ins:"static void Main() {\n    |\n}",d:"متد اصلی"},
+      {k:"class",ins:"using System;\n\nclass Program {\n    static void Main() {\n        |\n    }\n}",d:"کلاس"},
+      {k:"print",ins:"Console.Write(|);",d:"چاپ"},
+      {k:"writeline",ins:"Console.WriteLine(|);",d:"چاپ خط"},
+      {k:"int",ins:"int | = 0;",d:"عدد"},
+      {k:"string",ins:"string | = \"\";",d:"رشته"},
+      {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
+      {k:"for",ins:"for (int i = 1; i <= |; i++) {\n    \n}",d:"for"},
+      {k:"while",ins:"while (|) {\n    \n}",d:"while"},
+      {k:"کامنت",ins:"// |",d:"کامنت"}
+    ]
   },
   cpp: {
     label: "C++",
-    lang: "cpp",
-    ext: "cpp",
+    exec: "ai",
     starter: `#include <iostream>
 using namespace std;
 
@@ -334,13 +442,26 @@ int main() {
     }
     return 0;
 }`,
-    exec: "ai"
+    sug: [
+      {k:"include",ins:"#include <|>",d:"هدر"},
+      {k:"iostream",ins:"#include <iostream>\nusing namespace std;\n\nint main() {\n    |\n    return 0;\n}",d:"پایه"},
+      {k:"main",ins:"int main() {\n    |\n    return 0;\n}",d:"main"},
+      {k:"cout",ins:"cout << | << endl;",d:"چاپ"},
+      {k:"int",ins:"int | = 0;",d:"عدد"},
+      {k:"string",ins:"string | = \"\";",d:"رشته"},
+      {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
+      {k:"for",ins:"for (int i = 1; i <= |; i++) {\n    \n}",d:"for"},
+      {k:"while",ins:"while (|) {\n    \n}",d:"while"},
+      {k:"کامنت",ins:"// |",d:"کامنت"}
+    ]
   }
 };
 
-// ذخیره کد ویرایشگرها فقط در حافظه (بدون کوکی / بدون localStorage)
+// ذخیره کد ویرایشگرها فقط در حافظه
 const editorState = {};
 let currentEditorLang = null;
+let currentSuggestions = [], activeSugIdx = -1, sugRange = {start:0,end:0}, _inputTimer = null;
+const WORD_CHARS = /[a-zA-Z0-9_<>.#$@]/;
 
 function pickLang(id){
   CL=langs.find(l=>l.id===id);CT=null;
@@ -421,7 +542,8 @@ function md(t){
     return `<p>${l}</p>`;
   }).join("");
 }
-function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function esc(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function escapeHTML(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function back(){document.getElementById("langs").classList.remove("hide");document.getElementById("topics").classList.add("hide");document.getElementById("res").classList.add("hide");window.scrollTo(0,0);}
 function back2(){document.getElementById("topics").classList.remove("hide");document.getElementById("res").classList.add("hide");document.getElementById("res").scrollTop=0;window.scrollTo(0,0);}
 
@@ -503,7 +625,7 @@ document.getElementById("quizOptions").innerHTML=`
 function closeQuiz(){document.getElementById("quiz").classList.add("hide");}
 
 /* ============================================================
-   ویرایشگر چندزبانه
+   ویرایشگر چندزبانه + دستیار هوشمند پیشنهاد کد
    ============================================================ */
 
 function openEditor(){
@@ -514,9 +636,15 @@ function openEditor(){
   document.getElementById("editor").classList.remove("hide");
   document.getElementById("edTitle").textContent = "🖥️ ویرایشگر " + cfg.label;
   document.getElementById("edAiInput").placeholder = `مثلاً: یه برنامه ${cfg.label} برام بساز که ...`;
-  document.getElementById("edCode").value = editorState[id] !== undefined ? editorState[id] : cfg.starter;
+  const ta = document.getElementById("edCode");
+  ta.value = editorState[id] !== undefined ? editorState[id] : cfg.starter;
+  hideSuggest();
+  // اتصال رویدادهای پیشنهاد خودکار
+  ta.oninput = handleInput;
+  ta.onkeydown = handleKeyDown;
+  ta.onblur = function(){ setTimeout(hideSuggest, 180); };
+  ta.onclick = function(){ hideSuggest(); };
   clearPreview();
-  // اگر HTML بود، همان لحظه اجرا کن
   if (cfg.exec === "iframe") runCode();
 }
 
@@ -524,6 +652,7 @@ function closeEditor(){
   if (currentEditorLang) {
     editorState[currentEditorLang] = document.getElementById("edCode").value;
   }
+  hideSuggest();
   document.getElementById("editor").classList.add("hide");
 }
 
@@ -552,7 +681,184 @@ function showOutputText(text, isError){
   showPreviewHTML(html);
 }
 
-/* ---------- اجرای Pyodide (Python واقعی) ---------- */
+/* ============================================================
+   ✨ پیشنهاد خودکار کد (Autocomplete)
+   ============================================================ */
+
+function handleInput(){
+  if(!currentEditorLang) return;
+  if(_inputTimer) clearTimeout(_inputTimer);
+  _inputTimer = setTimeout(processInput, 60);
+}
+
+function processInput(){
+  if(!currentEditorLang) return;
+  const ta = document.getElementById("edCode");
+  const pos = ta.selectionStart;
+  if(pos !== ta.selectionEnd){ hideSuggest(); return; }
+  const start0 = Math.max(0, pos - 40);
+  let start = pos;
+  while(start > start0 && WORD_CHARS.test(ta.value[start-1])) start--;
+  let word = ta.value.substring(start, pos);
+
+  // برای HTML، اگر با < شروع شده، آن را برای تطبیق نادیده بگیر
+  let matchWord = word;
+  if(currentEditorLang === "html" && matchWord.startsWith("<")){
+    matchWord = matchWord.substring(1);
+  }
+  if(matchWord.length < 1 || matchWord.startsWith("/")){ hideSuggest(); return; }
+
+  const cfg = EDITOR_CONFIGS[currentEditorLang];
+  const list = cfg.sug || [];
+  const lw = matchWord.toLowerCase();
+  const matches = [];
+  for(let i = 0; i < list.length; i++){
+    if(list[i].k.toLowerCase().startsWith(lw)){
+      matches.push(list[i]);
+      if(matches.length >= 12) break;
+    }
+  }
+  if(matches.length === 0 || (matches.length === 1 && matches[0].k.toLowerCase() === lw)){
+    hideSuggest(); return;
+  }
+  showSuggest(matches, start, pos);
+}
+
+function showSuggest(matches, start, end){
+  currentSuggestions = matches;
+  activeSugIdx = 0;
+  sugRange.start = start;
+  sugRange.end = end;
+  const box = document.getElementById("edSuggest");
+  let html = "";
+  for(let i = 0; i < matches.length; i++){
+    const s = matches[i];
+    html += `<button type="button" class="sug-item${i===0?' active':''}" data-idx="${i}"><span class="sug-code">${escapeHTML(s.k)}</span><span class="sug-desc">${escapeHTML(s.d||"")}</span></button>`;
+  }
+  box.innerHTML = html;
+  box.classList.remove("hide");
+  positionSuggestBox();
+  box.onclick = function(e){
+    const btn = e.target.closest(".sug-item");
+    if(!btn) return;
+    applySuggestion(currentSuggestions[parseInt(btn.getAttribute("data-idx"), 10)]);
+  };
+}
+
+function positionSuggestBox(){
+  const ta = document.getElementById("edCode");
+  const box = document.getElementById("edSuggest");
+  const pos = getCaretPos(ta);
+  const boxW = 230, boxH = 220;
+  let top = pos.top;
+  let left = pos.left;
+  // فاصله از بالا نباشد
+  if(top < 10) top = 10;
+  // اگر پایین جا نبود، بالاتر نمایش بده
+  if(top + boxH > window.innerHeight - 10){
+    top = Math.max(10, pos.top - boxH - 4);
+  }
+  // کنترل عرض
+  if(left + boxW > window.innerWidth - 10) left = window.innerWidth - boxW - 10;
+  if(left < 10) left = 10;
+  box.style.top = top + "px";
+  box.style.left = left + "px";
+}
+
+/* محاسبه موقعیت مکان‌نما در textarea با تکنیک mirror */
+function getCaretPos(ta){
+  const div = document.createElement("div");
+  const cs = window.getComputedStyle(ta);
+  const props = ["fontFamily","fontSize","fontWeight","fontStyle","letterSpacing","lineHeight","textTransform","paddingTop","paddingRight","paddingBottom","paddingLeft","borderTopWidth","borderRightWidth","borderBottomWidth","borderLeftWidth","boxSizing","whiteSpace","wordWrap","wordBreak","direction","textAlign","tabSize"];
+  div.style.cssText = "position:absolute;visibility:hidden;top:-9999px;left:-9999px;overflow:hidden;white-space:pre-wrap;word-wrap:break-word;";
+  div.style.width = ta.offsetWidth + "px";
+  div.style.height = "auto";
+  for(const p of props){ try{ div.style[p] = cs[p]; }catch(e){} }
+  const value = ta.value;
+  const before = value.substring(0, ta.selectionStart);
+  const after = value.substring(ta.selectionStart) || ".";
+  div.textContent = before;
+  const span = document.createElement("span");
+  span.textContent = after;
+  div.appendChild(span);
+  document.body.appendChild(div);
+  const spanRect = span.getBoundingClientRect();
+  const lineHeight = parseFloat(cs.lineHeight) || 18;
+  const result = {
+    top: spanRect.top + lineHeight,
+    left: spanRect.left
+  };
+  document.body.removeChild(div);
+  return result;
+}
+
+function hideSuggest(){
+  const box = document.getElementById("edSuggest");
+  if(box && !box.classList.contains("hide")) box.classList.add("hide");
+  currentSuggestions = [];
+  activeSugIdx = -1;
+}
+
+function applySuggestion(s){
+  if(!s) return;
+  const ta = document.getElementById("edCode");
+  const v = ta.value;
+  const before = v.substring(0, sugRange.start);
+  const after = v.substring(sugRange.end);
+  const ins = s.ins;
+  const cursorMark = ins.indexOf("|");
+  const clean = cursorMark === -1 ? ins : ins.replace("|", "");
+  ta.value = before + clean + after;
+  const newPos = cursorMark === -1 ? sugRange.start + clean.length : sugRange.start + cursorMark;
+  ta.focus();
+  try{ ta.setSelectionRange(newPos, newPos); }catch(e){}
+  if(currentEditorLang) editorState[currentEditorLang] = ta.value;
+  hideSuggest();
+  // برای HTML: بلافاصله پیش‌نمایش را آپدیت کن
+  if(currentEditorLang === "html"){
+    showPreviewHTML(ta.value);
+  }
+}
+
+function handleKeyDown(e){
+  const box = document.getElementById("edSuggest");
+  const visible = box && !box.classList.contains("hide");
+  if(visible){
+    if(e.key === "Escape"){ e.preventDefault(); hideSuggest(); return; }
+    if(e.key === "ArrowDown"){ e.preventDefault(); activeSugIdx = Math.min(activeSugIdx + 1, currentSuggestions.length - 1); updateActiveSug(); return; }
+    if(e.key === "ArrowUp"){ e.preventDefault(); activeSugIdx = Math.max(activeSugIdx - 1, 0); updateActiveSug(); return; }
+    if(e.key === "Enter" || e.key === "Tab"){
+      if(activeSugIdx >= 0 && currentSuggestions[activeSugIdx]){
+        e.preventDefault();
+        applySuggestion(currentSuggestions[activeSugIdx]);
+        return;
+      }
+    }
+  }
+  // Tab پیش‌فرض: 4 فاصله
+  if(e.key === "Tab" && !visible){
+    e.preventDefault();
+    const ta = e.target;
+    const s = ta.selectionStart, en = ta.selectionEnd;
+    ta.value = ta.value.substring(0, s) + "    " + ta.value.substring(en);
+    ta.setSelectionRange(s + 4, s + 4);
+    if(currentEditorLang) editorState[currentEditorLang] = ta.value;
+  }
+}
+
+function updateActiveSug(){
+  const box = document.getElementById("edSuggest");
+  if(!box) return;
+  const items = box.querySelectorAll(".sug-item");
+  for(let i = 0; i < items.length; i++) items[i].classList.toggle("active", i === activeSugIdx);
+  if(items[activeSugIdx]){
+    try{ items[activeSugIdx].scrollIntoView({block:"nearest"}); }catch(e){}
+  }
+}
+
+/* ============================================================
+   موتورهای اجرای کد
+   ============================================================ */
 let pyodidePromise = null;
 async function ensurePyodide(){
   if (pyodidePromise) return pyodidePromise;
@@ -575,7 +881,6 @@ async function ensurePyodide(){
 
 async function runPython(code){
   const pyodide = await ensurePyodide();
-  // ریدایرکت خروجی
   pyodide.runPython(`
 import sys, io
 _stdout_buf = io.StringIO()
@@ -589,8 +894,7 @@ sys.stderr = _stderr_buf
   } catch (e) {
     pyErr = String(e.message || e);
   }
-  let out = "";
-  let err = "";
+  let out = "", err = "";
   try {
     out = pyodide.runPython("_stdout_buf.getvalue()") || "";
     err = pyodide.runPython("_stderr_buf.getvalue()") || "";
@@ -600,7 +904,6 @@ sys.stderr = _stderr_buf
   return result || "(بدون خروجی)";
 }
 
-/* ---------- اجرای sql.js (SQL واقعی) ---------- */
 let sqlPromise = null;
 async function ensureSqlJs(){
   if (sqlPromise) return sqlPromise;
@@ -642,7 +945,6 @@ async function runSQL(code){
   }
 }
 
-/* ---------- اجرا با AI (برای PHP, Java, C#, C++) ---------- */
 async function runWithAI(code, langLabel){
   const p = `تو یک شبیه‌ساز دقیق اجرای کد ${langLabel} هستی.
 کد زیر را در ذهنت اجرا کن و فقط و فقط خروجی برنامه (متن خروجی واقعی که چاپ می‌شود) را برگردان.
@@ -661,23 +963,21 @@ ${code}`;
   return txt || "(بدون خروجی)";
 }
 
-/* ---------- اجرای کد ---------- */
 async function runCode(){
   const id = currentEditorLang;
   const cfg = EDITOR_CONFIGS[id];
   if (!cfg) return;
   const code = document.getElementById("edCode").value;
   editorState[id] = code;
+  hideSuggest();
 
   const runBtn = document.getElementById("edRunBtn");
 
-  // HTML: اجرای مستقیم در iframe
   if (cfg.exec === "iframe") {
     showPreviewHTML(code);
     return;
   }
 
-  // بقیه: بارگذاری/شبیه‌سازی
   showOutputText("⏳ در حال اجرا...", false);
   runBtn.disabled = true;
   const oldTxt = runBtn.textContent;
@@ -705,7 +1005,6 @@ async function runCode(){
   }
 }
 
-/* ---------- کمک AI برای تولید کد ---------- */
 async function aiHelp(){
   const input = document.getElementById("edAiInput");
   const btn = document.getElementById("edAiBtn");
@@ -719,6 +1018,7 @@ async function aiHelp(){
   input.disabled = true; btn.disabled = true;
   const oldTxt = btn.textContent;
   btn.textContent = "...";
+  hideSuggest();
 
   const p = `تو یک دستیار متخصص ${cfg.label} هستی و به فارسی جواب می‌دی.
 درخواست کاربر: "${prompt}"
@@ -740,12 +1040,10 @@ ${currentCode}
         request_type: "editor_ai"
     });
     let txt = (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content || "").trim();
-    // پاکسازی backtick های احتیاطی
     txt = txt.replace(/^```[a-zA-Z0-9+#-]*\s*/i,"").replace(/```\s*$/,"").trim();
     if(!txt) throw new Error("پاسخی نیامد");
     document.getElementById("edCode").value = txt;
     editorState[id] = txt;
-    // برای HTML بلافاصله اجرا کن
     if (cfg.exec === "iframe") runCode();
     else showOutputText("✓ کد تولید شد. برای مشاهده خروجی دکمه «▶ اجرا» را بزنید.", false);
     input.value = "";
@@ -761,4 +1059,4 @@ ${currentCode}
 }
 </script>
 </body>
-</html>
+    </html>
