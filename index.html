@@ -10,15 +10,13 @@ html,body{-webkit-overflow-scrolling:touch;overscroll-behavior-y:none}
 body{font-family:Tahoma,sans-serif;background:#fff;min-height:100vh;padding:20px;direction:rtl;overflow-x:hidden}
 .box{max-width:1100px;margin:auto;padding:20px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
-.card{padding:22px 12px;background:#f7f8fa;border:2px solid #eaeaea;border-radius:14px;text-align:center;cursor:pointer;font-weight:bold;transition:transform .15s,border-color .15s;will-change:transform}
+.card{padding:22px 12px;background:#f7f8fa;border:2px solid #eaeaea;border-radius:14px;text-align:center;cursor:pointer;font-weight:bold;transition:transform .15s,border-color .15s}
 .card:hover{border-color:#667eea;transform:translateY(-3px)}
 .card.active{background:#667eea;border-color:#667eea;color:#fff;box-shadow:0 10px 25px rgba(102,126,234,.35)}
 .card .ico{font-size:34px;display:block;margin-bottom:8px}
 .card .name{font-size:15px}
-.topics-list{content-visibility:auto;contain-intrinsic-size:auto 1000px}
-.topic{padding:14px 18px;background:#f7f8fa;border-right:4px solid #667eea;border-radius:10px;margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;transition:background .15s}
+.topic{padding:14px 18px;background:#f7f8fa;border-right:4px solid #667eea;border-radius:10px;margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .topic:hover{background:#eef2ff}
-.topic:active{background:#e0e7ff}
 .tag{background:#667eea;color:#fff;padding:3px 12px;border-radius:20px;font-size:12px;white-space:nowrap;flex-shrink:0}
 .tag.easy{background:#27ae60}.tag.med{background:#f39c12}.tag.hard{background:#e74c3c}
 button.btn{padding:11px 20px;border:none;border-radius:10px;background:#667eea;color:#fff;font-family:Tahoma;font-size:14px;cursor:pointer;font-weight:bold;margin:5px}
@@ -26,7 +24,7 @@ button.btn:hover{background:#5568d3}
 button.btn.gray{background:#eee;color:#333}
 .editor-btn{background:#27ae60;width:100%;margin:0 0 10px 0;padding:13px;font-size:14px}
 .editor-btn:hover{background:#219a52}
-#res{position:fixed;top:0;right:0;left:0;bottom:0;background:#fff;z-index:100;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#res{position:fixed;inset:0;background:#fff;z-index:100;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .result-header{position:sticky;top:0;background:#fff;border-bottom:2px solid #eaeaea;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;gap:15px;z-index:10}
 .back-btn{padding:10px 20px;background:#667eea;color:#fff;border:none;border-radius:10px;font-family:Tahoma;font-size:14px;font-weight:bold;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .back-btn:hover{background:#5568d3}
@@ -43,9 +41,7 @@ button.btn.gray{background:#eee;color:#333}
 .actions-wrap{display:flex;gap:10px;justify-content:flex-start;margin-top:25px;padding:20px 0;border-top:1px solid #eaeaea;flex-wrap:wrap}
 .actions-wrap.hide{display:none!important}
 .btn-act{padding:11px 18px;border:none;border-radius:10px;background:#667eea;color:#fff;font-family:Tahoma;font-size:14px;font-weight:bold;cursor:pointer}
-.btn-act:hover{background:#5568d3}
 .btn-act.quiz{background:#f39c12}
-.btn-act.quiz:hover{background:#e67e22}
 .load{text-align:center;padding:40px;color:#667eea;font-weight:bold;font-size:16px}
 .load::after{content:'...';animation:d 1.2s infinite}
 @keyframes d{0%,20%{content:'.'}40%{content:'..'}60%,100%{content:'...'}}
@@ -56,48 +52,51 @@ button.btn.gray{background:#eee;color:#333}
 #quiz.hide{display:none}
 .quiz-box{background:#fff;border-radius:16px;padding:22px;max-width:600px;width:100%;max-height:92vh;overflow-y:auto;position:relative}
 .quiz-close{position:absolute;top:12px;left:12px;background:#eee;border:none;width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer;color:#333;font-family:Tahoma;line-height:1}
-.quiz-close:hover{background:#ddd}
 .quiz-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #eaeaea;font-weight:bold;color:#333;font-size:14px;padding-left:40px}
 .quiz-header .score{color:#667eea}
 #quizQuestion{font-size:16px;line-height:1.9;margin-bottom:18px;color:#222;min-height:60px}
-.quiz-opt{display:block;width:100%;padding:14px 18px;margin-bottom:10px;border:2px solid #e0e0e0;border-radius:10px;background:#f7f8fa;font-family:Tahoma;font-size:15px;text-align:right;cursor:pointer;transition:all .15s;color:#333}
+.quiz-opt{display:block;width:100%;padding:14px 18px;margin-bottom:10px;border:2px solid #e0e0e0;border-radius:10px;background:#f7f8fa;font-family:Tahoma;font-size:15px;text-align:right;cursor:pointer;color:#333}
 .quiz-opt:hover:not(:disabled){border-color:#667eea;background:#eef2ff}
 .quiz-opt.correct{background:#d4edda;border-color:#27ae60;color:#155724}
 .quiz-opt.wrong{background:#f8d7da;border-color:#e74c3c;color:#721c24}
-.quiz-opt:disabled{cursor:default}
 .quiz-actions{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
 #editor{position:fixed;inset:0;background:#fff;z-index:300;display:flex;flex-direction:column}
 .ed-header{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:#fff;border-bottom:2px solid #eaeaea;gap:10px}
-.ed-run{background:#27ae60;color:#fff;border:none;padding:9px 16px;border-radius:9px;font-family:Tahoma;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap}
+.ed-run{background:#27ae60;color:#fff;border:none;padding:9px 16px;border-radius:9px;font-family:Tahoma;font-size:13px;font-weight:bold;cursor:pointer}
 .ed-run:hover{background:#219a52}
 .ed-run:disabled{background:#aaa;cursor:wait}
 .ed-ai{display:flex;gap:8px;padding:10px 15px;background:#f7f8fa;border-bottom:1px solid #eaeaea}
 .ed-ai input{flex:1;padding:10px 14px;border:2px solid #e0e0e0;border-radius:9px;font-family:Tahoma;font-size:13px;outline:none;background:#fff;color:#333;min-width:0}
 .ed-ai input:focus{border-color:#667eea}
-.ed-ai button{padding:10px 16px;background:#667eea;color:#fff;border:none;border-radius:9px;font-family:Tahoma;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap}
+.ed-ai button{padding:10px 16px;background:#667eea;color:#fff;border:none;border-radius:9px;font-family:Tahoma;font-size:13px;font-weight:bold;cursor:pointer}
 .ed-ai button:hover{background:#5568d3}
 .ed-ai button:disabled{background:#aaa;cursor:wait}
 .ed-body{flex:1;display:flex;overflow:hidden;min-height:0;position:relative}
-#edCode{flex:1;padding:15px;border:none;border-left:2px solid #eaeaea;font-family:'Courier New',Consolas,monospace;font-size:13px;line-height:1.6;direction:ltr;text-align:left;resize:none;outline:none;background:#fafafa;color:#222}
-#edPreview{flex:1;border:none;background:#fff}
-.sug-box{position:fixed;background:#fff;border:1px solid #d8dbe6;border-radius:10px;box-shadow:0 8px 24px rgba(60,70,120,.22);max-height:210px;overflow-y:auto;z-index:500;min-width:200px;max-width:300px;font-family:Tahoma;padding:4px 0;animation:sugIn .12s ease-out}
-@keyframes sugIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.sug-item{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:7px 12px;border:none;background:transparent;font-family:Tahoma;font-size:12px;cursor:pointer;direction:ltr;color:#333;transition:background .1s;text-align:left}
-.sug-item:hover,.sug-item.active{background:#eef2ff}
-.sug-item.active{background:#dde6ff}
-.sug-code{font-family:'Courier New',Consolas,monospace;color:#667eea;font-weight:bold;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
-.sug-desc{color:#95a0b8;font-size:10px;white-space:nowrap;font-family:Tahoma;direction:rtl;flex-shrink:0}
-@media(max-width:600px){body{padding:10px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}.card{padding:16px 8px}.card .ico{font-size:28px}.card .name{font-size:13px}.result-body{padding:15px}#out pre{padding:12px;font-size:12px}.result-header{padding:10px 12px}.back-btn{padding:8px 14px;font-size:13px}.topic-title-bar{font-size:14px}.topic{padding:12px 14px}.btn-act{font-size:13px;padding:10px 14px}.ed-body{flex-direction:column}#edCode{border-left:none;border-bottom:2px solid #eaeaea}.ed-ai button{padding:9px 12px;font-size:12px}}
+#edCode{flex:1;padding:15px;border:none;font-family:'Courier New',Consolas,monospace;font-size:13px;line-height:1.6;direction:ltr;text-align:left;resize:none;outline:none;background:#fafafa;color:#222;tab-size:4}
+/* ✅ پنل خروجی تمام‌صفحه */
+#edOutput{position:fixed;inset:0;background:#fff;z-index:400;display:flex;flex-direction:column}
+#edOutput.hide{display:none}
+.out-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 15px;background:#fff;border-bottom:2px solid #eaeaea}
+.out-title{font-weight:bold;color:#333;font-size:15px;flex:1;text-align:center}
+.out-exit{background:#e74c3c;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-family:Tahoma;font-size:14px;font-weight:bold;cursor:pointer;white-space:nowrap}
+.out-exit:hover{background:#c0392b}
+#edPreview{flex:1;border:none;background:#fff;width:100%}
+.sug-box{position:fixed;background:#fff;border:1px solid #d8dbe6;border-radius:10px;box-shadow:0 8px 24px rgba(60,70,120,.22);max-height:210px;overflow-y:auto;z-index:500;min-width:200px;max-width:300px;font-family:Tahoma;padding:4px 0}
+.sug-item{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:7px 12px;border:none;background:transparent;font-family:Tahoma;font-size:12px;cursor:pointer;direction:ltr;color:#333;text-align:left}
+.sug-item:hover,.sug-item.active{background:#dde6ff}
+.sug-code{font-family:'Courier New',Consolas,monospace;color:#667eea;font-weight:bold;font-size:13px}
+.sug-desc{color:#95a0b8;font-size:10px;white-space:nowrap;direction:rtl}
+@media(max-width:600px){body{padding:10px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}.card{padding:16px 8px}.result-body{padding:15px}}
 </style>
 </head>
 <body>
 <div class="box">
 <div id="langs" class="grid"></div>
 <div id="topics" class="hide">
-<div id="editorBtnWrap" class="hide"><button id="editorOpenBtn" class="btn editor-btn" onclick="openEditor()">🖥️ ویرایشگر HTML</button></div>
+<div id="editorBtnWrap" class="hide"><button id="editorOpenBtn" class="btn editor-btn" onclick="openEditor()">🖥️ ویرایشگر</button></div>
 <button class="btn gray" onclick="back()">← بازگشت</button>
 <div class="topics-title" id="tt"></div>
-<div id="tl" class="topics-list"></div>
+<div id="tl"></div>
 </div>
 </div>
 <div id="res" class="hide">
@@ -108,7 +107,7 @@ button.btn.gray{background:#eee;color:#333}
 <div class="result-body">
 <div id="out"></div>
 <div class="actions-wrap hide" id="actionsWrap">
-<button class="btn-act" onclick="ask(true)">😕 متوجه نشدم! بهتر توضیح بده</button>
+<button class="btn-act" onclick="ask(true)">😕 متوجه نشدم!</button>
 <button class="btn-act quiz" onclick="startQuiz()">📝 آزمون</button>
 </div>
 </div>
@@ -133,48 +132,28 @@ button.btn.gray{background:#eee;color:#333}
 </div>
 <div class="ed-body">
 <textarea id="edCode" spellcheck="false"></textarea>
-<iframe id="edPreview"></iframe>
 <div id="edSuggest" class="sug-box hide"></div>
 </div>
 </div>
+<div id="edOutput" class="hide">
+<div class="out-header">
+<button class="out-exit" onclick="closeOutput()">✕ خروج</button>
+<div class="out-title">📺 خروجی</div>
+<div style="width:90px"></div>
+</div>
+<iframe id="edPreview"></iframe>
+</div>
 <script>
 const WORKER_URL = "https://ancient-thunder-42b4.sadqyamyrmhmd67.workers.dev";
-
-const BROWSER_FP = (function() {
-    try {
-        const d = [navigator.userAgent, screen.width + "x" + screen.height, navigator.language, Intl.DateTimeFormat().resolvedOptions().timeZone].join("|");
-        let h = 0;
-        for (let i = 0; i < d.length; i++) { h = ((h << 5) - h) + d.charCodeAt(i); h = h & h; }
-        return Math.abs(h).toString(36);
-    } catch(e) { return "unknown"; }
+const BROWSER_FP = (function(){
+  try{const d=[navigator.userAgent,screen.width+"x"+screen.height,navigator.language,Intl.DateTimeFormat().resolvedOptions().timeZone].join("|");let h=0;for(let i=0;i<d.length;i++){h=((h<<5)-h)+d.charCodeAt(i);h=h&h;}return Math.abs(h).toString(36);}catch(e){return "unknown";}
 })();
 
-async function callAI(payload) {
-    const res = await fetch(WORKER_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            messages: payload.messages,
-            temperature: payload.temperature !== undefined ? payload.temperature : 0.3,
-            max_tokens: payload.max_tokens || 1200,
-            model: payload.model || "gpt-4o-mini",
-            fingerprint: BROWSER_FP,
-            request_type: payload.request_type || "unknown",
-            language: CL ? CL.id : "",
-            topic: CT ? CT.t : ""
-        })
-    });
-    if (res.status === 429) {
-        const err = await res.json();
-        const e2 = new Error(err.error || "تعداد درخواست‌ها زیاد است");
-        e2.isRateLimit = true; e2.remaining_minutes = err.remaining_minutes || 10;
-        throw e2;
-    }
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "خطا در ارتباط با سرور");
-    }
-    return res.json();
+async function callAI(payload){
+  const res = await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:payload.messages,temperature:payload.temperature!==undefined?payload.temperature:0.3,max_tokens:payload.max_tokens||1200,model:payload.model||"gpt-4o-mini",fingerprint:BROWSER_FP,request_type:payload.request_type||"unknown",language:CL?CL.id:"",topic:CT?CT.t:""})});
+  if(res.status===429){const err=await res.json();const e2=new Error(err.error||"تعداد درخواست‌ها زیاد است");e2.isRateLimit=true;e2.remaining_minutes=err.remaining_minutes||10;throw e2;}
+  if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error||"خطا در ارتباط با سرور");}
+  return res.json();
 }
 
 const langs=[
@@ -183,7 +162,7 @@ const langs=[
 {id:"css",n:"CSS",i:"🎨",t:[
 {t:"معرفی و راه‌های اتصال",l:"easy"},{t:"انتخابگر تگ",l:"easy"},{t:"انتخابگر class",l:"easy"},{t:"انتخابگر id",l:"easy"},{t:"انتخابگر گروهی",l:"easy"},{t:"رنگ متن",l:"easy"},{t:"پس‌زمینه",l:"easy"},{t:"فونت (font-family)",l:"easy"},{t:"اندازه فونت",l:"easy"},{t:"ضخامت فونت",l:"easy"},{t:"چیدمان متن",l:"easy"},{t:"تزئین متن",l:"easy"},{t:"ارتفاع خط",l:"easy"},{t:"فاصله حروف",l:"easy"},{t:"حاشیه داخلی (padding)",l:"easy"},{t:"حاشیه خارجی (margin)",l:"easy"},{t:"قاب (border)",l:"easy"},{t:"گوشه گرد",l:"easy"},{t:"عرض و ارتفاع",l:"easy"},{t:"واحدهای اندازه",l:"easy"},{t:"Box Model",l:"med"},{t:"Display",l:"med"},{t:"Position - relative",l:"med"},{t:"Position - fixed, sticky",l:"med"},{t:"z-index",l:"med"},{t:"Float و Clear",l:"med"},{t:"Overflow",l:"med"},{t:"Flexbox - معرفی",l:"med"},{t:"Flexbox - justify-content",l:"med"},{t:"Flexbox - align-items",l:"med"},{t:"Flexbox - flex-wrap",l:"med"},{t:"Flexbox - flex-grow",l:"med"},{t:"Grid - معرفی",l:"med"},{t:"Grid - columns و rows",l:"med"},{t:"Grid - gap",l:"med"},{t:"Grid - areas",l:"med"},{t:"Transition",l:"med"},{t:"Transform",l:"med"},{t:"Opacity و Visibility",l:"med"},{t:"Cursor",l:"med"},{t:"Box-shadow",l:"hard"},{t:"Text-shadow",l:"hard"},{t:"Gradient",l:"hard"},{t:"Pseudo-class",l:"hard"},{t:"Pseudo-element",l:"hard"},{t:"Attribute selectors",l:"hard"},{t:"nth-child",l:"hard"},{t:"Animation و @keyframes",l:"hard"},{t:"متغیرها (Variables)",l:"hard"},{t:"calc()",l:"hard"},{t:"Media Query",l:"hard"},{t:"Mobile-first Design",l:"hard"},{t:"Dark Mode",l:"hard"},{t:"Filters",l:"hard"},{t:"Blend Modes",l:"hard"},{t:"Clip-path و Mask",l:"hard"}]},
 {id:"js",n:"JavaScript",i:"⚡",t:[
-{t:"معرفی و اولین کد",l:"easy"},{t:"متغیرها (let, const)",l:"easy"},{t:"انواع داده",l:"easy"},{t:"عملگرهای ریاضی",l:"easy"},{t:"عملگرهای مقایسه",l:"easy"},{t:"عملگرهای منطقی",l:"easy"},{t:"رشته‌ها",l:"easy"},{t:"متدهای رشته",l:"easy"},{t:"Template Literals",l:"easy"},{t:"شرط if/else",l:"easy"},{t:"عملگر سه‌تایی",l:"easy"},{t:"سوییچ case",l:"easy"},{t:"حلقه for",l:"easy"},{t:"حلقه while",l:"easy"},{t:"break و continue",l:"easy"},{t:"توابع ساده",l:"easy"},{t:"پارامتر و آرگومان",l:"easy"},{t:"return",l:"easy"},{t:"Arrow Functions",l:"easy"},{t:"آرایه‌ها - معرفی",l:"med"},{t:"push, pop, shift",l:"med"},{t:"map, filter, reduce",l:"med"},{t:"find, some, every",l:"med"},{t:"مرتب‌سازی (sort)",l:"med"},{t:"آبجکت‌ها",l:"med"},{t:"دسترسی به خواص",l:"med"},{t:"متدهای آبجکت",l:"med"},{t:"Object Destructuring",l:"med"},{t:"Array Destructuring",l:"med"},{t:"Spread و Rest",l:"med"},{t:"DOM - انتخاب عناصر",l:"med"},{t:"DOM - تغییر محتوا",l:"med"},{t:"DOM - تغییر استایل",l:"med"},{t:"DOM - افزودن عنصر",l:"med"},{t:"Event Listeners",l:"med"},{t:"Event Propagation",l:"med"},{t:"Form Events",l:"med"},{t:"Keyboard Events",l:"med"},{t:"Mouse Events",l:"med"},{t:"JSON",l:"hard"},{t:"Callback Functions",l:"hard"},{t:"Promise - معرفی",l:"hard"},{t:"Promise - then/catch",l:"hard"},{t:"Async/Await",l:"hard"},{t:"Fetch API",l:"hard"},{t:"try/catch",l:"hard"},{t:"Closures",l:"hard"},{t:"Scope و Hoisting",l:"hard"},{t:"this در JavaScript",l:"hard"},{t:"Prototype",l:"hard"},{t:"Classes در ES6",l:"hard"},{t:"Modules",l:"hard"},{t:"LocalStorage",l:"hard"},{t:"Regular Expressions",l:"hard"},{t:"Date و Time",l:"hard"}]},
+{t:"معرفی و اولین کد",l:"easy"},{t:"متغیرها (let, const)",l:"easy"},{t:"انواع داده",l:"easy"},{t:"عملگرهای ریاضی",l:"easy"},{t:"عملگرهای مقایسه",l:"easy"},{t:"عملگرهای منطقی",l:"easy"},{t:"رشته‌ها",l:"easy"},{t:"متدهای رشته",l:"easy"},{t:"Template Literals",l:"easy"},{t:"شرط if/else",l:"easy"},{t:"عملگر سه‌تایی",l:"easy"},{t:"سوییچ case",l:"easy"},{t:"حلقه for",l:"easy"},{t:"حلقه while",l:"easy"},{t:"break و continue",l:"easy"},{t:"توابع ساده",l:"easy"},{t:"پارامتر و آرگومان",l:"easy"},{t:"return",l:"easy"},{t:"Arrow Functions",l:"easy"},{t:"آرایه‌ها - معرفی",l:"med"},{t:"push, pop, shift",l:"med"},{t:"map, filter, reduce",l:"med"},{t:"find, some, every",l:"med"},{t:"مرتب‌سازی (sort)",l:"med"},{t:"آبجکت‌ها",l:"med"},{t:"دسترسی به خواص",l:"med"},{t:"متدهای آبجکت",l:"med"},{t:"Object Destructuring",l:"med"},{t:"Array Destructuring",l:"med"},{t:"Spread و Rest",l:"med"},{t:"DOM - انتخاب عناصر",l:"med"},{t:"DOM - تغییر محتوا",l:"med"},{t:"DOM - تغییر استایل",l:"med"},{t:"DOM - افزودن عنصر",l:"med"},{t:"Event Listeners",l:"med"},{t:"Form Events",l:"med"},{t:"Keyboard Events",l:"med"},{t:"JSON",l:"hard"},{t:"Callback Functions",l:"hard"},{t:"Promise - معرفی",l:"hard"},{t:"Promise - then/catch",l:"hard"},{t:"Async/Await",l:"hard"},{t:"Fetch API",l:"hard"},{t:"try/catch",l:"hard"},{t:"Closures",l:"hard"},{t:"Scope و Hoisting",l:"hard"},{t:"this در JavaScript",l:"hard"},{t:"Prototype",l:"hard"},{t:"Classes در ES6",l:"hard"},{t:"Modules",l:"hard"},{t:"LocalStorage",l:"hard"},{t:"Regular Expressions",l:"hard"},{t:"Date و Time",l:"hard"}]},
 {id:"py",n:"Python",i:"🐍",t:[
 {t:"معرفی و نصب",l:"easy"},{t:"Hello World",l:"easy"},{t:"متغیرها",l:"easy"},{t:"انواع داده",l:"easy"},{t:"تبدیل نوع",l:"easy"},{t:"input و print",l:"easy"},{t:"عملگرهای ریاضی",l:"easy"},{t:"عملگرهای مقایسه",l:"easy"},{t:"عملگرهای منطقی",l:"easy"},{t:"رشته‌ها",l:"easy"},{t:"متدهای رشته",l:"easy"},{t:"f-string",l:"easy"},{t:"if/elif/else",l:"easy"},{t:"حلقه for",l:"easy"},{t:"حلقه while",l:"easy"},{t:"break و continue",l:"easy"},{t:"range()",l:"easy"},{t:"توابع ساده",l:"easy"},{t:"پارامتر و return",l:"easy"},{t:"توابع lambda",l:"easy"},{t:"لیست‌ها",l:"med"},{t:"متدهای لیست",l:"med"},{t:"List Comprehension",l:"med"},{t:"تاپل‌ها",l:"med"},{t:"ست‌ها",l:"med"},{t:"دیکشنری",l:"med"},{t:"متدهای دیکشنری",l:"med"},{t:"Nested Data",l:"med"},{t:"ماژول‌ها و import",l:"med"},{t:"math و random",l:"med"},{t:"خواندن فایل",l:"med"},{t:"نوشتن فایل",l:"med"},{t:"with Statement",l:"med"},{t:"try/except",l:"med"},{t:"finally و raise",l:"med"},{t:"توابع بازگشتی",l:"med"},{t:"*args و **kwargs",l:"med"},{t:"map و filter",l:"med"},{t:"zip و enumerate",l:"med"},{t:"کلاس‌ها و آبجکت‌ها",l:"hard"},{t:"Constructor",l:"hard"},{t:"وراثت",l:"hard"},{t:"Polymorphism",l:"hard"},{t:"Encapsulation",l:"hard"},{t:"Magic Methods",l:"hard"},{t:"Decorators",l:"hard"},{t:"Generators و yield",l:"hard"},{t:"Iterators",l:"hard"},{t:"Context Managers",l:"hard"},{t:"Multithreading",l:"hard"},{t:"Async/Await",l:"hard"},{t:"NumPy",l:"hard"},{t:"Pandas",l:"hard"},{t:"Matplotlib",l:"hard"},{t:"requests",l:"hard"},{t:"BeautifulSoup",l:"hard"},{t:"Flask API",l:"hard"}]},
 {id:"java",n:"Java",i:"☕",t:[
@@ -204,61 +183,31 @@ const langs=[
 {t:"معرفی Node.js",l:"easy"},{t:"نصب Node و npm",l:"easy"},{t:"اولین اسکریپت",l:"easy"},{t:"REPL",l:"easy"},{t:"متغیرها و توابع",l:"easy"},{t:"ماژول‌های داخلی",l:"easy"},{t:"module.exports",l:"easy"},{t:"ES Modules",l:"easy"},{t:"npm init",l:"easy"},{t:"نصب پکیج",l:"easy"},{t:"Semantic Versioning",l:"easy"},{t:"npx",l:"easy"},{t:"yarn و pnpm",l:"easy"},{t:"process و argv",l:"easy"},{t:".env",l:"easy"},{t:"Readline",l:"easy"},{t:"Timers",l:"easy"},{t:"Console",l:"easy"},{t:"Error Handling",l:"easy"},{t:"Callbacks",l:"easy"},{t:"fs - خواندن",l:"med"},{t:"fs - نوشتن",l:"med"},{t:"fs - promise",l:"med"},{t:"path",l:"med"},{t:"os",l:"med"},{t:"Events",l:"med"},{t:"Streams",l:"med"},{t:"Readable/Writable",l:"med"},{t:"Buffers",l:"med"},{t:"HTTP Server",l:"med"},{t:"Routing دستی",l:"med"},{t:"Express - معرفی",l:"med"},{t:"Express - Routing",l:"med"},{t:"Express - Middleware",l:"med"},{t:"Static Files",l:"med"},{t:"Template Engines",l:"med"},{t:"axios/fetch",l:"med"},{t:"Nodemon",l:"med"},{t:"PM2",l:"med"},{t:"Promise و Async/Await",l:"med"},{t:"REST API",l:"hard"},{t:"MongoDB با Mongoose",l:"hard"},{t:"PostgreSQL",l:"hard"},{t:"JWT Auth",l:"hard"},{t:"Session و Cookie",l:"hard"},{t:"bcrypt",l:"hard"},{t:"Multer",l:"hard"},{t:"Socket.io",l:"hard"},{t:"Nodemailer",l:"hard"},{t:"Rate Limiting",l:"hard"},{t:"CORS",l:"hard"},{t:"Jest Testing",l:"hard"},{t:"GraphQL",l:"hard"},{t:"Docker",l:"hard"},{t:"Deploy",l:"hard"},{t:"Cluster",l:"hard"},{t:"Performance",l:"hard"}]}
 ];
 
-let CL=null,CT=null;
-let quizData=[],quizIdx=0,quizScore=0;
-
+let CL=null,CT=null,quizData=[],quizIdx=0,quizScore=0;
 document.getElementById("langs").innerHTML=langs.map(l=>`<div class="card" id="card-${l.id}" onclick="pickLang('${l.id}')"><span class="ico">${l.i}</span><span class="name">${l.n}</span></div>`).join("");
 
-// ✅ Python حالا با AI اجرا می‌شود (سبک، سریع، بدون Pyodide)
 const EDITOR_CONFIGS = {
-  html: {
-    label: "HTML", exec: "iframe",
-    starter: `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>صفحه من</title>
-<style>
-body{font-family:Tahoma,sans-serif;padding:20px;background:#f0f4ff}
-h1{color:#667eea}
-</style>
-</head>
-<body>
-<h1>سلام دنیا! 👋</h1>
-<p>اینجا کد HTML خودت رو بنویس یا از AI بخواه برات بسازه</p>
-</body>
-</html>`,
-    sug: [
+  html: { label:"HTML", exec:"iframe",
+    starter:`<!DOCTYPE html>\n<html lang="fa" dir="rtl">\n<head>\n<meta charset="UTF-8">\n<title>صفحه من</title>\n<style>\nbody{font-family:Tahoma;padding:20px;background:#f0f4ff}\nh1{color:#667eea}\n</style>\n</head>\n<body>\n<h1>سلام دنیا! 👋</h1>\n<p>کد HTML خودت رو بنویس</p>\n</body>\n</html>`,
+    sug:[
       {k:"html5",ins:"<!DOCTYPE html>\n<html lang=\"fa\" dir=\"rtl\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>|</title>\n</head>\n<body>\n\n</body>\n</html>",d:"ساختار کامل"},
-      {k:"head",ins:"<head>\n  |\n</head>",d:"سر"},
-      {k:"body",ins:"<body>\n  |\n</body>",d:"بدن"},
-      {k:"title",ins:"<title>|</title>",d:"عنوان"},
-      {k:"meta",ins:"<meta charset=\"|\">",d:"متا"},
-      {k:"b",ins:"<b>|</b>",d:"پررنگ"},
-      {k:"strong",ins:"<strong>|</strong>",d:"قوی"},
-      {k:"i",ins:"<i>|</i>",d:"ایتالیک"},
-      {k:"em",ins:"<em>|</em>",d:"تاکید"},
-      {k:"u",ins:"<u>|</u>",d:"زیرخط"},
-      {k:"mark",ins:"<mark>|</mark>",d:"هایلایت"},
-      {k:"br",ins:"<br>|",d:"شکست خط"},
-      {k:"hr",ins:"<hr>|",d:"خط"},
-      {k:"p",ins:"<p>|</p>",d:"پاراگراف"},
-      {k:"h1",ins:"<h1>|</h1>",d:"h1"},
-      {k:"h2",ins:"<h2>|</h2>",d:"h2"},
-      {k:"h3",ins:"<h3>|</h3>",d:"h3"},
-      {k:"div",ins:"<div>|</div>",d:"بخش"},
-      {k:"span",ins:"<span>|</span>",d:"تکه"},
-      {k:"a",ins:"<a href=\"|\">لینک</a>",d:"لینک"},
-      {k:"img",ins:"<img src=\"|\" alt=\"توضیح\">",d:"تصویر"},
+      {k:"head",ins:"<head>\n  |\n</head>",d:"سر"},{k:"body",ins:"<body>\n  |\n</body>",d:"بدن"},
+      {k:"title",ins:"<title>|</title>",d:"عنوان"},{k:"meta",ins:"<meta charset=\"|\">",d:"متا"},
+      {k:"b",ins:"<b>|</b>",d:"پررنگ"},{k:"strong",ins:"<strong>|</strong>",d:"قوی"},
+      {k:"i",ins:"<i>|</i>",d:"ایتالیک"},{k:"em",ins:"<em>|</em>",d:"تاکید"},
+      {k:"u",ins:"<u>|</u>",d:"زیرخط"},{k:"mark",ins:"<mark>|</mark>",d:"هایلایت"},
+      {k:"br",ins:"<br>|",d:"شکست خط"},{k:"hr",ins:"<hr>|",d:"خط"},
+      {k:"p",ins:"<p>|</p>",d:"پاراگراف"},{k:"h1",ins:"<h1>|</h1>",d:"h1"},
+      {k:"h2",ins:"<h2>|</h2>",d:"h2"},{k:"h3",ins:"<h3>|</h3>",d:"h3"},
+      {k:"div",ins:"<div>|</div>",d:"بخش"},{k:"span",ins:"<span>|</span>",d:"تکه"},
+      {k:"a",ins:"<a href=\"|\">لینک</a>",d:"لینک"},{k:"img",ins:"<img src=\"|\" alt=\"توضیح\">",d:"تصویر"},
       {k:"ul",ins:"<ul>\n  <li>|</li>\n  <li></li>\n</ul>",d:"لیست"},
       {k:"ol",ins:"<ol>\n  <li>|</li>\n  <li></li>\n</ol>",d:"لیست مرتب"},
       {k:"li",ins:"<li>|</li>",d:"آیتم"},
-      {k:"table",ins:"<table border=\"1\">\n  <tr><th>|</th><th>ب</th></tr>\n  <tr><td></td><td></td></tr>\n</table>",d:"جدول"},
-      {k:"tr",ins:"<tr>\n  <td>|</td>\n  <td></td>\n</tr>",d:"ردیف"},
-      {k:"td",ins:"<td>|</td>",d:"سلول"},
+      {k:"table",ins:"<table border=\"1\">\n  <tr><th>|</th></tr>\n  <tr><td></td></tr>\n</table>",d:"جدول"},
+      {k:"tr",ins:"<tr>\n  <td>|</td>\n</tr>",d:"ردیف"},{k:"td",ins:"<td>|</td>",d:"سلول"},
       {k:"form",ins:"<form>\n  <label>|</label>\n  <input type=\"text\">\n  <button>ارسال</button>\n</form>",d:"فرم"},
-      {k:"input",ins:"<input type=\"|\">",d:"ورودی"},
-      {k:"button",ins:"<button>|</button>",d:"دکمه"},
+      {k:"input",ins:"<input type=\"|\">",d:"ورودی"},{k:"button",ins:"<button>|</button>",d:"دکمه"},
       {k:"style",ins:"<style>\n  |\n</style>",d:"استایل"},
       {k:"script",ins:"<script>\n  |\n<\/script>",d:"اسکریپت"},
       {k:"section",ins:"<section>\n  |\n</section>",d:"بخش"},
@@ -266,161 +215,84 @@ h1{color:#667eea}
       {k:"footer",ins:"<footer>\n  |\n</footer>",d:"فوتر"},
       {k:"nav",ins:"<nav>\n  |\n</nav>",d:"ناوبری"},
       {k:"کامنت",ins:"<!-- | -->",d:"کامنت"}
-    ]
-  },
-  py: {
-    label: "Python", exec: "ai",
-    starter: `# کد پایتون خود را بنویسید
-name = "دنیا"
-print(f"سلام {name}! 👋")
-
-for i in range(1, 6):
-    print(f"شماره {i}")`,
-    sug: [
-      {k:"print",ins:"print(|)",d:"چاپ"},
-      {k:"input",ins:"input(\"|\")",d:"ورودی"},
-      {k:"if",ins:"if |:\n    ",d:"شرط"},
-      {k:"elif",ins:"elif |:\n    ",d:"شرط دیگر"},
-      {k:"else",ins:"else:\n    |",d:"وگرنه"},
-      {k:"for",ins:"for i in range(|):\n    ",d:"for"},
-      {k:"while",ins:"while |:\n    ",d:"while"},
-      {k:"def",ins:"def |():\n    ",d:"تابع"},
+    ]},
+  py: { label:"Python", exec:"ai",
+    starter:`# کد پایتون خود را بنویسید\nname = "دنیا"\nprint(f"سلام {name}! 👋")\n\nfor i in range(1, 6):\n    print(f"شماره {i}")`,
+    sug:[
+      {k:"print",ins:"print(|)",d:"چاپ"},{k:"input",ins:"input(\"|\")",d:"ورودی"},
+      {k:"if",ins:"if |:\n    ",d:"شرط"},{k:"elif",ins:"elif |:\n    ",d:"شرط دیگر"},
+      {k:"else",ins:"else:\n    |",d:"وگرنه"},{k:"for",ins:"for i in range(|):\n    ",d:"for"},
+      {k:"while",ins:"while |:\n    ",d:"while"},{k:"def",ins:"def |():\n    ",d:"تابع"},
       {k:"class",ins:"class |:\n    def __init__(self):\n        pass",d:"کلاس"},
-      {k:"return",ins:"return |",d:"بازگشت"},
-      {k:"import",ins:"import |",d:"import"},
+      {k:"return",ins:"return |",d:"بازگشت"},{k:"import",ins:"import |",d:"import"},
       {k:"try",ins:"try:\n    |\nexcept Exception as e:\n    print(e)",d:"try/except"},
-      {k:"lambda",ins:"lambda x: |",d:"لانبدا"},
-      {k:"range",ins:"range(|)",d:"بازه"},
-      {k:"len",ins:"len(|)",d:"طول"},
-      {k:"list",ins:"list(|)",d:"لیست"},
-      {k:"dict",ins:"dict(|)",d:"دیکشنری"},
+      {k:"lambda",ins:"lambda x: |",d:"لانبدا"},{k:"range",ins:"range(|)",d:"بازه"},
+      {k:"len",ins:"len(|)",d:"طول"},{k:"list",ins:"list(|)",d:"لیست"},{k:"dict",ins:"dict(|)",d:"دیکشنری"},
       {k:"کامنت",ins:"# |",d:"کامنت"}
-    ]
-  },
-  sql: {
-    label: "SQL", exec: "ai",
-    starter: `-- کوئری SQL خود را بنویسید
-CREATE TABLE users (id INTEGER, name TEXT, age INTEGER);
-INSERT INTO users VALUES (1, 'علی', 25);
-INSERT INTO users VALUES (2, 'مریم', 30);
-INSERT INTO users VALUES (3, 'رضا', 22);
-
-SELECT * FROM users;`,
-    sug: [
-      {k:"select",ins:"SELECT | FROM table_name;",d:"انتخاب"},
-      {k:"select *",ins:"SELECT * FROM |;",d:"همه"},
+    ]},
+  sql: { label:"SQL", exec:"ai",
+    starter:`-- کوئری SQL خود را بنویسید\nCREATE TABLE users (id INTEGER, name TEXT, age INTEGER);\nINSERT INTO users VALUES (1, 'علی', 25);\nINSERT INTO users VALUES (2, 'مریم', 30);\n\nSELECT * FROM users;`,
+    sug:[
+      {k:"select",ins:"SELECT | FROM table_name;",d:"انتخاب"},{k:"select *",ins:"SELECT * FROM |;",d:"همه"},
       {k:"insert",ins:"INSERT INTO | (col) VALUES ('val');",d:"درج"},
       {k:"update",ins:"UPDATE | SET col = 'val' WHERE id = 1;",d:"بروز"},
       {k:"delete",ins:"DELETE FROM | WHERE id = 1;",d:"حذف"},
       {k:"create",ins:"CREATE TABLE | (\n  id INTEGER PRIMARY KEY,\n  name TEXT\n);",d:"جدول"},
-      {k:"where",ins:"WHERE |",d:"شرط"},
-      {k:"group",ins:"GROUP BY |",d:"گروه"},
-      {k:"order",ins:"ORDER BY | DESC",d:"مرتب"},
-      {k:"کامنت",ins:"-- |",d:"کامنت"}
-    ]
-  },
-  php: {
-    label: "PHP", exec: "ai",
-    starter: `<?php
-$name = "دنیا";
-echo "سلام $name! 👋\\n";
-
-for ($i = 1; $i <= 5; $i++) {
-    echo "شماره $i\\n";
-}
-?>`,
-    sug: [
-      {k:"php",ins:"<?php\n|\n?>",d:"تگ PHP"},
-      {k:"echo",ins:"echo \"|\";",d:"چاپ"},
-      {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
-      {k:"else",ins:"else {\n    |\n}",d:"وگرنه"},
+      {k:"where",ins:"WHERE |",d:"شرط"},{k:"group",ins:"GROUP BY |",d:"گروه"},
+      {k:"order",ins:"ORDER BY | DESC",d:"مرتب"},{k:"کامنت",ins:"-- |",d:"کامنت"}
+    ]},
+  php: { label:"PHP", exec:"ai",
+    starter:`<?php\n$name = "دنیا";\necho "سلام $name! 👋\\n";\n\nfor ($i = 1; $i <= 5; $i++) {\n    echo "شماره $i\\n";\n}\n?>`,
+    sug:[
+      {k:"php",ins:"<?php\n|\n?>",d:"تگ PHP"},{k:"echo",ins:"echo \"|\";",d:"چاپ"},
+      {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},{k:"else",ins:"else {\n    |\n}",d:"وگرنه"},
       {k:"for",ins:"for ($i = 1; $i <= |; $i++) {\n    \n}",d:"for"},
       {k:"while",ins:"while (|) {\n    \n}",d:"while"},
       {k:"foreach",ins:"foreach ($| as $item) {\n    \n}",d:"foreach"},
-      {k:"function",ins:"function |() {\n    \n}",d:"تابع"},
-      {k:"class",ins:"class | {\n    \n}",d:"کلاس"},
+      {k:"function",ins:"function |() {\n    \n}",d:"تابع"},{k:"class",ins:"class | {\n    \n}",d:"کلاس"},
       {k:"کامنت",ins:"// |",d:"کامنت"}
-    ]
-  },
-  java: {
-    label: "Java", exec: "ai",
-    starter: `public class Main {
-    public static void main(String[] args) {
-        System.out.println("سلام دنیا! 👋");
-        for (int i = 1; i <= 5; i++) {
-            System.out.println("شماره " + i);
-        }
-    }
-}`,
-    sug: [
+    ]},
+  java: { label:"Java", exec:"ai",
+    starter:`public class Main {\n    public static void main(String[] args) {\n        System.out.println("سلام دنیا! 👋");\n        for (int i = 1; i <= 5; i++) {\n            System.out.println("شماره " + i);\n        }\n    }\n}`,
+    sug:[
       {k:"main",ins:"public static void main(String[] args) {\n    |\n}",d:"متد اصلی"},
       {k:"class",ins:"public class | {\n    public static void main(String[] args) {\n        \n    }\n}",d:"کلاس"},
-      {k:"print",ins:"System.out.print(|);",d:"چاپ"},
-      {k:"println",ins:"System.out.println(|);",d:"چاپ خط"},
-      {k:"int",ins:"int | = 0;",d:"عدد"},
-      {k:"string",ins:"String | = \"\";",d:"رشته"},
+      {k:"print",ins:"System.out.print(|);",d:"چاپ"},{k:"println",ins:"System.out.println(|);",d:"چاپ خط"},
+      {k:"int",ins:"int | = 0;",d:"عدد"},{k:"string",ins:"String | = \"\";",d:"رشته"},
       {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
       {k:"for",ins:"for (int i = 1; i <= |; i++) {\n    \n}",d:"for"},
-      {k:"while",ins:"while (|) {\n    \n}",d:"while"},
-      {k:"کامنت",ins:"// |",d:"کامنت"}
-    ]
-  },
-  cs: {
-    label: "C#", exec: "ai",
-    starter: `using System;
-
-class Program {
-    static void Main() {
-        Console.WriteLine("سلام دنیا! 👋");
-        for (int i = 1; i <= 5; i++) {
-            Console.WriteLine("شماره " + i);
-        }
-    }
-}`,
-    sug: [
+      {k:"while",ins:"while (|) {\n    \n}",d:"while"},{k:"کامنت",ins:"// |",d:"کامنت"}
+    ]},
+  cs: { label:"C#", exec:"ai",
+    starter:`using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("سلام دنیا! 👋");\n        for (int i = 1; i <= 5; i++) {\n            Console.WriteLine("شماره " + i);\n        }\n    }\n}`,
+    sug:[
       {k:"main",ins:"static void Main() {\n    |\n}",d:"متد اصلی"},
       {k:"class",ins:"using System;\n\nclass Program {\n    static void Main() {\n        |\n    }\n}",d:"کلاس"},
-      {k:"print",ins:"Console.Write(|);",d:"چاپ"},
-      {k:"writeline",ins:"Console.WriteLine(|);",d:"چاپ خط"},
-      {k:"int",ins:"int | = 0;",d:"عدد"},
-      {k:"string",ins:"string | = \"\";",d:"رشته"},
+      {k:"print",ins:"Console.Write(|);",d:"چاپ"},{k:"writeline",ins:"Console.WriteLine(|);",d:"چاپ خط"},
+      {k:"int",ins:"int | = 0;",d:"عدد"},{k:"string",ins:"string | = \"\";",d:"رشته"},
       {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
       {k:"for",ins:"for (int i = 1; i <= |; i++) {\n    \n}",d:"for"},
-      {k:"while",ins:"while (|) {\n    \n}",d:"while"},
-      {k:"کامنت",ins:"// |",d:"کامنت"}
-    ]
-  },
-  cpp: {
-    label: "C++", exec: "ai",
-    starter: `#include <iostream>
-using namespace std;
-
-int main() {
-    cout << "سلام دنیا! 👋" << endl;
-    for (int i = 1; i <= 5; i++) {
-        cout << "شماره " << i << endl;
-    }
-    return 0;
-}`,
-    sug: [
+      {k:"while",ins:"while (|) {\n    \n}",d:"while"},{k:"کامنت",ins:"// |",d:"کامنت"}
+    ]},
+  cpp: { label:"C++", exec:"ai",
+    starter:`#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "سلام دنیا! 👋" << endl;\n    for (int i = 1; i <= 5; i++) {\n        cout << "شماره " << i << endl;\n    }\n    return 0;\n}`,
+    sug:[
       {k:"include",ins:"#include <|>",d:"هدر"},
       {k:"iostream",ins:"#include <iostream>\nusing namespace std;\n\nint main() {\n    |\n    return 0;\n}",d:"پایه"},
       {k:"main",ins:"int main() {\n    |\n    return 0;\n}",d:"main"},
-      {k:"cout",ins:"cout << | << endl;",d:"چاپ"},
-      {k:"int",ins:"int | = 0;",d:"عدد"},
+      {k:"cout",ins:"cout << | << endl;",d:"چاپ"},{k:"int",ins:"int | = 0;",d:"عدد"},
       {k:"string",ins:"string | = \"\";",d:"رشته"},
       {k:"if",ins:"if (|) {\n    \n}",d:"شرط"},
       {k:"for",ins:"for (int i = 1; i <= |; i++) {\n    \n}",d:"for"},
-      {k:"while",ins:"while (|) {\n    \n}",d:"while"},
-      {k:"کامنت",ins:"// |",d:"کامنت"}
-    ]
-  }
+      {k:"while",ins:"while (|) {\n    \n}",d:"while"},{k:"کامنت",ins:"// |",d:"کامنت"}
+    ]}
 };
 
 const editorState = {};
 let currentEditorLang = null;
 let currentSuggestions = [], activeSugIdx = -1, sugRange = {start:0,end:0}, _inputTimer = null;
 const WORD_CHARS = /[a-zA-Z0-9_<>.#$@]/;
+const PAIRS = {'}':'{', ')':'(', ']':'['};
 
 function pickLang(id){
   CL=langs.find(l=>l.id===id);CT=null;
@@ -436,51 +308,47 @@ function pickLang(id){
   document.getElementById("tt").textContent=`${CL.i} ${CL.n} - یه موضوع انتخاب کن (${CL.t.length} موضوع):`;
   document.getElementById("tl").innerHTML=CL.t.map((x,i)=>`<div class="topic" onclick="pickTopic(${i})"><span>${x.t}</span><span class="tag ${x.l}">${x.l==="easy"?"آسان":x.l==="med"?"متوسط":"پیشرفته"}</span></div>`).join("");
 }
-
 function pickTopic(i){
-CT=CL.t[i];
-document.getElementById("topics").classList.add("hide");
-document.getElementById("res").classList.remove("hide");
-document.getElementById("langName").textContent=CL.i+' '+CL.n;
-document.getElementById("topicName").textContent=CT.t;
-document.getElementById("res").scrollTop=0;
-document.getElementById("out").className="load";
-document.getElementById("out").textContent=`در حال آموزش ${CT.t}`;
-document.getElementById("actionsWrap").classList.add("hide");
-ask(false);
+  CT=CL.t[i];
+  document.getElementById("topics").classList.add("hide");
+  document.getElementById("res").classList.remove("hide");
+  document.getElementById("langName").textContent=CL.i+' '+CL.n;
+  document.getElementById("topicName").textContent=CT.t;
+  document.getElementById("res").scrollTop=0;
+  document.getElementById("out").className="load";
+  document.getElementById("out").textContent=`در حال آموزش ${CT.t}`;
+  document.getElementById("actionsWrap").classList.add("hide");
+  ask(false);
 }
-
 async function ask(again){
-const out=document.getElementById("out");
-const actions=document.getElementById("actionsWrap");
-const isAgain=again===true;
-actions.classList.add("hide");
-const p=isAgain?`موضوع "${CT.t}" از ${CL.n} رو ساده و سریع توضیح بده. از مثال روزمره و تشبیه استفاده کن. خط به خط کد رو توضیح بده. کوتاه و مفید.`:`موضوع "${CT.t}" از ${CL.n} رو سریع و کوتاه آموزش بده.\nساختار:\n## توضیح ساده\n## نمونه کد ۱\n\`\`\`\n[کد]\n\`\`\`\n## نمونه کد ۲\n\`\`\`\n[کد]\n\`\`\`\n## اشتباهات رایج\n## نکته طلایی\nکوتاه، فارسی، کاربردی.`;
-out.className="load";out.textContent=`در حال آموزش ${CT.t}`;
-document.getElementById("res").scrollTop=0;
-try{
-const d = await callAI({messages: [{ role: "user", content: p }],temperature: 0.3,max_tokens: 1200,request_type: isAgain ? "ask_again" : "ask"});
-const txt = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-if(!txt) throw new Error("پاسخی نیامد");
-out.className="";out.innerHTML=md(txt);
-actions.classList.remove("hide");
-}catch(e){
-  out.className="err";
-  out.textContent = e.isRateLimit ? "⚠️ تعداد درخواست‌ها زیاد است. " + (e.remaining_minutes ? e.remaining_minutes + " دقیقه دیگر امتحان کنید." : "") : "❌ " + e.message;
-  actions.classList.remove("hide");
+  const out=document.getElementById("out"),actions=document.getElementById("actionsWrap");
+  const isAgain=again===true;
+  actions.classList.add("hide");
+  const p=isAgain?`موضوع "${CT.t}" از ${CL.n} رو ساده و سریع توضیح بده. از مثال روزمره استفاده کن. کوتاه و مفید.`:`موضوع "${CT.t}" از ${CL.n} رو سریع و کوتاه آموزش بده.\n## توضیح ساده\n## نمونه کد\n\`\`\`\n[کد]\n\`\`\`\n## نکته طلایی\nکوتاه، فارسی.`;
+  out.className="load";out.textContent=`در حال آموزش ${CT.t}`;
+  document.getElementById("res").scrollTop=0;
+  try{
+    const d=await callAI({messages:[{role:"user",content:p}],temperature:0.3,max_tokens:1200,request_type:isAgain?"ask_again":"ask"});
+    const txt=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content;
+    if(!txt)throw new Error("پاسخی نیامد");
+    out.className="";out.innerHTML=md(txt);
+    actions.classList.remove("hide");
+  }catch(e){
+    out.className="err";
+    out.textContent=e.isRateLimit?"⚠️ تعداد درخواست‌ها زیاد است. "+(e.remaining_minutes?e.remaining_minutes+" دقیقه دیگر امتحان کنید.":""):"❌ "+e.message;
+    actions.classList.remove("hide");
+  }
 }
-}
-
 function md(t){
-  let cb = [];
-  t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, l, c) => {cb.push(`<pre>${esc(c.trim())}</pre>`);return `__CB_${cb.length - 1}__`;});
-  t = esc(t);
-  t = t.replace(/^## (.+)$/gm, "<h2>$1</h2>");
-  t = t.replace(/^### (.+)$/gm, "<h3>$1</h3>");
-  t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  t = t.replace(/`([^`]+)`/g, "<code>$1</code>");
-  t = t.replace(/__CB_(\d+)__/g, (_, i) => cb[i]);
-  return t.split("\n").map(l => {if (!l.trim()) return "";if (l.trim().startsWith("<")) return l;return `<p>${l}</p>`;}).join("");
+  let cb=[];
+  t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,l,c)=>{cb.push(`<pre>${esc(c.trim())}</pre>`);return `__CB_${cb.length-1}__`;});
+  t=esc(t);
+  t=t.replace(/^## (.+)$/gm,"<h2>$1</h2>");
+  t=t.replace(/^### (.+)$/gm,"<h3>$1</h3>");
+  t=t.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+  t=t.replace(/`([^`]+)`/g,"<code>$1</code>");
+  t=t.replace(/__CB_(\d+)__/g,(_,i)=>cb[i]);
+  return t.split("\n").map(l=>{if(!l.trim())return "";if(l.trim().startsWith("<"))return l;return `<p>${l}</p>`;}).join("");
 }
 function esc(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function escapeHTML(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
@@ -488,229 +356,269 @@ function back(){document.getElementById("langs").classList.remove("hide");docume
 function back2(){document.getElementById("topics").classList.remove("hide");document.getElementById("res").classList.add("hide");document.getElementById("res").scrollTop=0;window.scrollTo(0,0);}
 
 async function startQuiz(){
-document.getElementById("quiz").classList.remove("hide");
-document.getElementById("quizProgress").textContent="در حال ساخت سوالات...";
-document.getElementById("quizScore").textContent="";
-document.getElementById("quizQuestion").textContent="";
-document.getElementById("quizOptions").innerHTML='<div class="load" style="padding:20px">در حال آماده‌سازی</div>';
-const p=`درباره موضوع "${CT.t}" از زبان ${CL.n}، دقیقا ۵ سوال سه‌گزینه‌ای آموزشی بساز. فقط آرایه JSON:\n[{"q":"متن سوال","o":["گزینه اول","گزینه دوم","گزینه سوم"],"a":0}]`;
-try{
-const d = await callAI({messages: [{ role: "user", content: p }],temperature: 0.8,max_tokens: 1500,request_type: "quiz"});
-let txt=(d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content || "").trim();
-txt=txt.replace(/```json/gi,"").replace(/```/g,"").trim();
-const start=txt.indexOf("[");const end=txt.lastIndexOf("]");
-if(start===-1||end===-1)throw new Error("پاسخ نامعتبر");
-const qs=JSON.parse(txt.slice(start,end+1));
-if(!Array.isArray(qs)||!qs.length)throw new Error("سوالی ساخته نشد");
-quizData=qs;quizIdx=0;quizScore=0;showQuestion();
-}catch(e){
-  document.getElementById("quizProgress").textContent="";
-  document.getElementById("quizQuestion").innerHTML=`<span style="color:#e74c3c">❌ ${esc(e.message)}</span>`;
-  document.getElementById("quizOptions").innerHTML='<div class="quiz-actions"><button class="btn" onclick="startQuiz()">🔄 تلاش دوباره</button></div>';
+  document.getElementById("quiz").classList.remove("hide");
+  document.getElementById("quizProgress").textContent="در حال ساخت سوالات...";
+  document.getElementById("quizScore").textContent="";
+  document.getElementById("quizQuestion").textContent="";
+  document.getElementById("quizOptions").innerHTML='<div class="load" style="padding:20px">در حال آماده‌سازی</div>';
+  const p=`درباره موضوع "${CT.t}" از زبان ${CL.n}"، دقیقا ۵ سوال سه‌گزینه‌ای آموزشی بساز. فقط آرایه JSON:\n[{"q":"سوال","o":["گزینه اول","گزینه دوم","گزینه سوم"],"a":0}]`;
+  try{
+    const d=await callAI({messages:[{role:"user",content:p}],temperature:0.8,max_tokens:1500,request_type:"quiz"});
+    let txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||"").trim();
+    txt=txt.replace(/```json/gi,"").replace(/```/g,"").trim();
+    const start=txt.indexOf("[");const end=txt.lastIndexOf("]");
+    if(start===-1||end===-1)throw new Error("پاسخ نامعتبر");
+    const qs=JSON.parse(txt.slice(start,end+1));
+    if(!Array.isArray(qs)||!qs.length)throw new Error("سوالی ساخته نشد");
+    quizData=qs;quizIdx=0;quizScore=0;showQuestion();
+  }catch(e){
+    document.getElementById("quizProgress").textContent="";
+    document.getElementById("quizQuestion").innerHTML=`<span style="color:#e74c3c">❌ ${esc(e.message)}</span>`;
+    document.getElementById("quizOptions").innerHTML='<div class="quiz-actions"><button class="btn" onclick="startQuiz()">🔄 تلاش دوباره</button></div>';
+  }
 }
-}
-
 function showQuestion(){
-if(quizIdx>=quizData.length){showScore();return;}
-const q=quizData[quizIdx];
-document.getElementById("quizProgress").textContent=`سوال ${quizIdx+1} از ${quizData.length}`;
-document.getElementById("quizScore").textContent=`امتیاز: ${quizScore}`;
-document.getElementById("quizQuestion").textContent=q.q;
-document.getElementById("quizOptions").innerHTML=q.o.map((opt,i)=>`<button class="quiz-opt" onclick="answerQ(${i})">${esc(opt)}</button>`).join("");
+  if(quizIdx>=quizData.length){showScore();return;}
+  const q=quizData[quizIdx];
+  document.getElementById("quizProgress").textContent=`سوال ${quizIdx+1} از ${quizData.length}`;
+  document.getElementById("quizScore").textContent=`امتیاز: ${quizScore}`;
+  document.getElementById("quizQuestion").textContent=q.q;
+  document.getElementById("quizOptions").innerHTML=q.o.map((opt,i)=>`<button class="quiz-opt" onclick="answerQ(${i})">${esc(opt)}</button>`).join("");
 }
 function answerQ(i){
-const q=quizData[quizIdx];
-const btns=document.querySelectorAll('.quiz-opt');
-btns.forEach((b,idx)=>{b.disabled=true;if(idx===q.a)b.classList.add('correct');if(idx===i&&i!==q.a)b.classList.add('wrong');});
-if(i===q.a)quizScore++;
-document.getElementById("quizScore").textContent=`امتیاز: ${quizScore}`;
-setTimeout(()=>{quizIdx++;showQuestion();},900);
+  const q=quizData[quizIdx];
+  document.querySelectorAll('.quiz-opt').forEach((b,idx)=>{b.disabled=true;if(idx===q.a)b.classList.add('correct');if(idx===i&&i!==q.a)b.classList.add('wrong');});
+  if(i===q.a)quizScore++;
+  document.getElementById("quizScore").textContent=`امتیاز: ${quizScore}`;
+  setTimeout(()=>{quizIdx++;showQuestion();},900);
 }
 function showScore(){
-const pct=Math.round((quizScore/quizData.length)*100);
-const emoji=pct>=80?'🎉':pct>=50?'👍':'📚';
-const msg=pct>=80?'عالی بودی!':pct>=50?'خوب بود، ادامه بده!':'بازم تمرین کن!';
-document.getElementById("quizProgress").textContent="";
-document.getElementById("quizScore").textContent="";
-document.getElementById("quizQuestion").innerHTML=`<div style="text-align:center;padding:15px 0"><div style="font-size:54px;margin-bottom:12px">${emoji}</div><div style="font-size:16px;color:#555;margin-bottom:10px">${msg}</div><div style="font-size:20px;font-weight:bold;color:#667eea">${quizScore} از ${quizData.length}</div><div style="color:#888;margin-top:6px;font-size:14px">${pct}% درست</div></div>`;
-document.getElementById("quizOptions").innerHTML=`<div class="quiz-actions"><button class="btn" onclick="startQuiz()">🔄 آزمون جدید</button><button class="btn gray" onclick="closeQuiz()">بستن</button></div>`;
+  const pct=Math.round((quizScore/quizData.length)*100);
+  const emoji=pct>=80?'🎉':pct>=50?'👍':'📚';
+  document.getElementById("quizProgress").textContent="";
+  document.getElementById("quizScore").textContent="";
+  document.getElementById("quizQuestion").innerHTML=`<div style="text-align:center;padding:15px 0"><div style="font-size:54px;margin-bottom:12px">${emoji}</div><div style="font-size:20px;font-weight:bold;color:#667eea">${quizScore} از ${quizData.length}</div><div style="color:#888;margin-top:6px;font-size:14px">${pct}% درست</div></div>`;
+  document.getElementById("quizOptions").innerHTML=`<div class="quiz-actions"><button class="btn" onclick="startQuiz()">🔄 آزمون جدید</button><button class="btn gray" onclick="closeQuiz()">بستن</button></div>`;
 }
 function closeQuiz(){document.getElementById("quiz").classList.add("hide");}
 
 /* ============ ویرایشگر ============ */
 function openEditor(){
-  const id = CL && CL.id;
-  const cfg = EDITOR_CONFIGS[id];
-  if (!cfg) return;
-  currentEditorLang = id;
+  const id=CL&&CL.id,cfg=EDITOR_CONFIGS[id];
+  if(!cfg)return;
+  currentEditorLang=id;
   document.getElementById("editor").classList.remove("hide");
-  document.getElementById("edTitle").textContent = "🖥️ ویرایشگر " + cfg.label;
-  document.getElementById("edAiInput").placeholder = `مثلاً: یه برنامه ${cfg.label} برام بساز که ...`;
-  const ta = document.getElementById("edCode");
-  ta.value = editorState[id] !== undefined ? editorState[id] : cfg.starter;
+  document.getElementById("edTitle").textContent="🖥️ ویرایشگر "+cfg.label;
+  document.getElementById("edAiInput").placeholder=`مثلاً: یه برنامه ${cfg.label} برام بساز...`;
+  const ta=document.getElementById("edCode");
+  ta.value=editorState[id]!==undefined?editorState[id]:cfg.starter;
   hideSuggest();
-  ta.oninput = handleInput;
-  ta.onkeydown = handleKeyDown;
-  ta.onblur = function(){ setTimeout(hideSuggest, 180); };
-  ta.onclick = function(){ hideSuggest(); };
-  clearPreview();
-  if (cfg.exec === "iframe") runCode();
+  ta.oninput=handleInput;
+  ta.onkeydown=handleKeyDown;
+  ta.onblur=function(){setTimeout(hideSuggest,180);};
+  ta.onclick=function(){hideSuggest();};
 }
 function closeEditor(){
-  if (currentEditorLang) editorState[currentEditorLang] = document.getElementById("edCode").value;
+  if(currentEditorLang)editorState[currentEditorLang]=document.getElementById("edCode").value;
   hideSuggest();
+  closeOutput();
   document.getElementById("editor").classList.add("hide");
 }
-function clearPreview(){
-  try{
-    const iframe = document.getElementById("edPreview");
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open();
-    doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:Tahoma;padding:20px;color:#999;background:#fafafa;margin:0">پیش‌نمایش / خروجی اینجا نمایش داده می‌شود</body></html>`);
-    doc.close();
-  }catch(e){}
+function closeOutput(){
+  document.getElementById("edOutput").classList.add("hide");
 }
 function showPreviewHTML(html){
-  const iframe = document.getElementById("edPreview");
-  const doc = iframe.contentDocument || iframe.contentWindow.document;
-  doc.open(); doc.write(html); doc.close();
+  const iframe=document.getElementById("edPreview");
+  const doc=iframe.contentDocument||iframe.contentWindow.document;
+  doc.open();doc.write(html);doc.close();
 }
-function showOutputText(text, isError){
-  const color = isError ? "#ff6b6b" : "#d4d4d4";
-  const html = `<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><style>
-    body{font-family:Tahoma,sans-serif;padding:15px;background:#1e1e1e;color:${color};margin:0}
-    pre{white-space:pre-wrap;word-break:break-word;font-family:'Courier New',Consolas,monospace;font-size:13px;line-height:1.9;direction:ltr;text-align:left;margin:0;color:${color}}
+function showOutputText(text,isError){
+  const color=isError?"#ff6b6b":"#d4d4d4";
+  const html=`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><style>
+    body{font-family:Tahoma;padding:15px;background:#1e1e1e;color:${color};margin:0}
+    pre{white-space:pre-wrap;word-break:break-word;font-family:'Courier New',monospace;font-size:13px;line-height:1.9;direction:ltr;text-align:left;margin:0;color:${color}}
   </style></head><body><pre>${esc(text)}</pre></body></html>`;
   showPreviewHTML(html);
 }
 
+/* ============ Auto-indent ============ */
+function lineStart(v,pos){let i=pos;while(i>0&&v[i-1]!=="\n")i--;return i;}
+function getIndent(v,ls){let ind="";let j=ls;while(j<v.length&&(v[j]===" "||v[j]==="\t")){ind+=v[j];j++;}return ind;}
+function smartDedent(ta,closeC,openC){
+  const pos=ta.selectionStart;
+  if(ta.value[pos-1]!==closeC)return;
+  const ls=lineStart(ta.value,pos-1);
+  const before=ta.value.substring(ls,pos-1);
+  if(before.trim()!=="")return;
+  let depth=1,i=pos-2;
+  while(i>=0&&depth>0){if(ta.value[i]===closeC)depth++;else if(ta.value[i]===openC)depth--;if(depth===0)break;i--;}
+  if(depth!==0)return;
+  const ols=lineStart(ta.value,i);
+  const indent=getIndent(ta.value,ols);
+  const nv=ta.value.substring(0,ls)+indent+ta.value.substring(pos-1);
+  ta.value=nv;
+  const delta=indent.length-before.length;
+  const np=pos+delta;
+  ta.setSelectionRange(np,np);
+  if(currentEditorLang)editorState[currentEditorLang]=ta.value;
+}
+
 /* ============ Autocomplete ============ */
 function handleInput(){
-  if(!currentEditorLang) return;
-  if(_inputTimer) clearTimeout(_inputTimer);
-  _inputTimer = setTimeout(processInput, 60);
+  if(!currentEditorLang)return;
+  if(_inputTimer)clearTimeout(_inputTimer);
+  _inputTimer=setTimeout(processInput,60);
 }
 function processInput(){
-  if(!currentEditorLang) return;
-  const ta = document.getElementById("edCode");
-  const pos = ta.selectionStart;
-  if(pos !== ta.selectionEnd){ hideSuggest(); return; }
-  const start0 = Math.max(0, pos - 40);
-  let start = pos;
-  while(start > start0 && WORD_CHARS.test(ta.value[start-1])) start--;
-  let word = ta.value.substring(start, pos);
-  let matchWord = word;
-  if(currentEditorLang === "html" && matchWord.startsWith("<")) matchWord = matchWord.substring(1);
-  if(matchWord.length < 1 || matchWord.startsWith("/")){ hideSuggest(); return; }
-  const cfg = EDITOR_CONFIGS[currentEditorLang];
-  const list = cfg.sug || [];
-  const lw = matchWord.toLowerCase();
-  const matches = [];
-  for(let i = 0; i < list.length; i++){
-    if(list[i].k.toLowerCase().startsWith(lw)){ matches.push(list[i]); if(matches.length >= 12) break; }
+  if(!currentEditorLang)return;
+  const ta=document.getElementById("edCode");
+  const pos=ta.selectionStart;
+  if(pos!==ta.selectionEnd){hideSuggest();return;}
+  const start0=Math.max(0,pos-40);
+  let start=pos;
+  while(start>start0&&WORD_CHARS.test(ta.value[start-1]))start--;
+  let word=ta.value.substring(start,pos);
+  let matchWord=word;
+  if(currentEditorLang==="html"&&matchWord.startsWith("<"))matchWord=matchWord.substring(1);
+  if(matchWord.length<1||matchWord.startsWith("/")){hideSuggest();return;}
+  const cfg=EDITOR_CONFIGS[currentEditorLang];
+  const list=cfg.sug||[];
+  const lw=matchWord.toLowerCase();
+  const matches=[];
+  for(let i=0;i<list.length;i++){
+    if(list[i].k.toLowerCase().startsWith(lw)){matches.push(list[i]);if(matches.length>=12)break;}
   }
-  if(matches.length === 0 || (matches.length === 1 && matches[0].k.toLowerCase() === lw)){ hideSuggest(); return; }
-  showSuggest(matches, start, pos);
+  if(matches.length===0||(matches.length===1&&matches[0].k.toLowerCase()===lw)){hideSuggest();return;}
+  showSuggest(matches,start,pos);
 }
-function showSuggest(matches, start, end){
-  currentSuggestions = matches; activeSugIdx = 0;
-  sugRange.start = start; sugRange.end = end;
-  const box = document.getElementById("edSuggest");
-  let html = "";
-  for(let i = 0; i < matches.length; i++){
-    const s = matches[i];
-    html += `<button type="button" class="sug-item${i===0?' active':''}" data-idx="${i}"><span class="sug-code">${escapeHTML(s.k)}</span><span class="sug-desc">${escapeHTML(s.d||"")}</span></button>`;
+function showSuggest(matches,start,end){
+  currentSuggestions=matches;activeSugIdx=0;
+  sugRange.start=start;sugRange.end=end;
+  const box=document.getElementById("edSuggest");
+  let html="";
+  for(let i=0;i<matches.length;i++){
+    const s=matches[i];
+    html+=`<button type="button" class="sug-item${i===0?' active':''}" data-idx="${i}"><span class="sug-code">${escapeHTML(s.k)}</span><span class="sug-desc">${escapeHTML(s.d||"")}</span></button>`;
   }
-  box.innerHTML = html;
+  box.innerHTML=html;
   box.classList.remove("hide");
   positionSuggestBox();
-  box.onclick = function(e){
-    const btn = e.target.closest(".sug-item");
-    if(!btn) return;
-    applySuggestion(currentSuggestions[parseInt(btn.getAttribute("data-idx"), 10)]);
+  box.onclick=function(e){
+    const btn=e.target.closest(".sug-item");
+    if(!btn)return;
+    applySuggestion(currentSuggestions[parseInt(btn.getAttribute("data-idx"),10)]);
   };
 }
 function positionSuggestBox(){
-  const ta = document.getElementById("edCode");
-  const box = document.getElementById("edSuggest");
-  const pos = getCaretPos(ta);
-  const boxW = 230, boxH = 220;
-  let top = pos.top, left = pos.left;
-  if(top < 10) top = 10;
-  if(top + boxH > window.innerHeight - 10) top = Math.max(10, pos.top - boxH - 4);
-  if(left + boxW > window.innerWidth - 10) left = window.innerWidth - boxW - 10;
-  if(left < 10) left = 10;
-  box.style.top = top + "px"; box.style.left = left + "px";
+  const ta=document.getElementById("edCode");
+  const box=document.getElementById("edSuggest");
+  const pos=getCaretPos(ta);
+  const boxW=230,boxH=220;
+  let top=pos.top,left=pos.left;
+  if(top<10)top=10;
+  if(top+boxH>window.innerHeight-10)top=Math.max(10,pos.top-boxH-4);
+  if(left+boxW>window.innerWidth-10)left=window.innerWidth-boxW-10;
+  if(left<10)left=10;
+  box.style.top=top+"px";box.style.left=left+"px";
 }
 function getCaretPos(ta){
-  const div = document.createElement("div");
-  const cs = window.getComputedStyle(ta);
-  const props = ["fontFamily","fontSize","fontWeight","fontStyle","letterSpacing","lineHeight","textTransform","paddingTop","paddingRight","paddingBottom","paddingLeft","borderTopWidth","borderRightWidth","borderBottomWidth","borderLeftWidth","boxSizing","whiteSpace","wordWrap","wordBreak","direction","textAlign","tabSize"];
-  div.style.cssText = "position:absolute;visibility:hidden;top:-9999px;left:-9999px;overflow:hidden;white-space:pre-wrap;word-wrap:break-word;";
-  div.style.width = ta.offsetWidth + "px"; div.style.height = "auto";
-  for(const p of props){ try{ div.style[p] = cs[p]; }catch(e){} }
-  div.textContent = ta.value.substring(0, ta.selectionStart);
-  const span = document.createElement("span");
-  span.textContent = ta.value.substring(ta.selectionStart) || ".";
+  const div=document.createElement("div");
+  const cs=window.getComputedStyle(ta);
+  const props=["fontFamily","fontSize","fontWeight","fontStyle","letterSpacing","lineHeight","textTransform","paddingTop","paddingRight","paddingBottom","paddingLeft","borderTopWidth","borderRightWidth","borderBottomWidth","borderLeftWidth","boxSizing","whiteSpace","wordWrap","wordBreak","direction","textAlign","tabSize"];
+  div.style.cssText="position:absolute;visibility:hidden;top:-9999px;left:-9999px;overflow:hidden;white-space:pre-wrap;word-wrap:break-word;";
+  div.style.width=ta.offsetWidth+"px";div.style.height="auto";
+  for(const p of props){try{div.style[p]=cs[p];}catch(e){}}
+  div.textContent=ta.value.substring(0,ta.selectionStart);
+  const span=document.createElement("span");
+  span.textContent=ta.value.substring(ta.selectionStart)||".";
   div.appendChild(span);
   document.body.appendChild(div);
-  const spanRect = span.getBoundingClientRect();
-  const lineHeight = parseFloat(cs.lineHeight) || 18;
-  const result = { top: spanRect.top + lineHeight, left: spanRect.left };
+  const spanRect=span.getBoundingClientRect();
+  const lineHeight=parseFloat(cs.lineHeight)||18;
+  const result={top:spanRect.top+lineHeight,left:spanRect.left};
   document.body.removeChild(div);
   return result;
 }
 function hideSuggest(){
-  const box = document.getElementById("edSuggest");
-  if(box && !box.classList.contains("hide")) box.classList.add("hide");
-  currentSuggestions = []; activeSugIdx = -1;
+  const box=document.getElementById("edSuggest");
+  if(box&&!box.classList.contains("hide"))box.classList.add("hide");
+  currentSuggestions=[];activeSugIdx=-1;
 }
 function applySuggestion(s){
-  if(!s) return;
-  const ta = document.getElementById("edCode");
-  const v = ta.value;
-  const before = v.substring(0, sugRange.start);
-  const after = v.substring(sugRange.end);
-  const ins = s.ins;
-  const cm = ins.indexOf("|");
-  const clean = cm === -1 ? ins : ins.replace("|", "");
-  ta.value = before + clean + after;
-  const newPos = cm === -1 ? sugRange.start + clean.length : sugRange.start + cm;
+  if(!s)return;
+  const ta=document.getElementById("edCode");
+  const v=ta.value;
+  const before=v.substring(0,sugRange.start);
+  const after=v.substring(sugRange.end);
+  const ins=s.ins;
+  const cm=ins.indexOf("|");
+  const clean=cm===-1?ins:ins.replace("|","");
+  ta.value=before+clean+after;
+  const newPos=cm===-1?sugRange.start+clean.length:sugRange.start+cm;
   ta.focus();
-  try{ ta.setSelectionRange(newPos, newPos); }catch(e){}
-  if(currentEditorLang) editorState[currentEditorLang] = ta.value;
+  try{ta.setSelectionRange(newPos,newPos);}catch(e){}
+  if(currentEditorLang)editorState[currentEditorLang]=ta.value;
   hideSuggest();
-  if(currentEditorLang === "html") showPreviewHTML(ta.value);
 }
 function handleKeyDown(e){
-  const box = document.getElementById("edSuggest");
-  const visible = box && !box.classList.contains("hide");
+  const box=document.getElementById("edSuggest");
+  const visible=box&&!box.classList.contains("hide");
   if(visible){
-    if(e.key === "Escape"){ e.preventDefault(); hideSuggest(); return; }
-    if(e.key === "ArrowDown"){ e.preventDefault(); activeSugIdx = Math.min(activeSugIdx + 1, currentSuggestions.length - 1); updateActiveSug(); return; }
-    if(e.key === "ArrowUp"){ e.preventDefault(); activeSugIdx = Math.max(activeSugIdx - 1, 0); updateActiveSug(); return; }
-    if(e.key === "Enter" || e.key === "Tab"){
-      if(activeSugIdx >= 0 && currentSuggestions[activeSugIdx]){ e.preventDefault(); applySuggestion(currentSuggestions[activeSugIdx]); return; }
+    if(e.key==="Escape"){e.preventDefault();hideSuggest();return;}
+    if(e.key==="ArrowDown"){e.preventDefault();activeSugIdx=Math.min(activeSugIdx+1,currentSuggestions.length-1);updateActiveSug();return;}
+    if(e.key==="ArrowUp"){e.preventDefault();activeSugIdx=Math.max(activeSugIdx-1,0);updateActiveSug();return;}
+    if(e.key==="Enter"||e.key==="Tab"){
+      if(activeSugIdx>=0&&currentSuggestions[activeSugIdx]){e.preventDefault();applySuggestion(currentSuggestions[activeSugIdx]);return;}
     }
   }
-  if(e.key === "Tab" && !visible){
-    e.preventDefault();
+  const isCode = currentEditorLang && currentEditorLang !== "html";
+  if(isCode && PAIRS[e.key] && !e.ctrlKey && !e.metaKey && !e.altKey){
     const ta = e.target;
-    const s = ta.selectionStart, en = ta.selectionEnd;
-    ta.value = ta.value.substring(0, s) + "    " + ta.value.substring(en);
-    ta.setSelectionRange(s + 4, s + 4);
-    if(currentEditorLang) editorState[currentEditorLang] = ta.value;
+    setTimeout(()=>smartDedent(ta, e.key, PAIRS[e.key]), 0);
+    return;
+  }
+  if(e.key === "Enter" && isCode && !e.shiftKey && !e.ctrlKey){
+    const ta = e.target;
+    const pos = ta.selectionStart;
+    if(pos === ta.selectionEnd){
+      const beforeChar = ta.value[pos-1];
+      const afterChar = ta.value[pos];
+      const isOpenBrace = beforeChar === "{";
+      const isPyColon = beforeChar === ":" && currentEditorLang === "py";
+      if(isOpenBrace || isPyColon){
+        e.preventDefault();
+        const ls = lineStart(ta.value, pos);
+        const indent = getIndent(ta.value, ls);
+        const inner = indent + "    ";
+        const closeAfter = isOpenBrace && afterChar === "}";
+        const ins = closeAfter ? ("\n" + inner + "\n" + indent) : ("\n" + inner);
+        ta.value = ta.value.substring(0, pos) + ins + ta.value.substring(pos);
+        const np = closeAfter ? (pos + 1 + inner.length) : (pos + ins.length);
+        ta.setSelectionRange(np, np);
+        if(currentEditorLang) editorState[currentEditorLang] = ta.value;
+        hideSuggest();
+        return;
+      }
+    }
+  }
+  if(e.key==="Tab"&&!visible){
+    e.preventDefault();
+    const ta=e.target;
+    const s=ta.selectionStart,en=ta.selectionEnd;
+    ta.value=ta.value.substring(0,s)+"    "+ta.value.substring(en);
+    ta.setSelectionRange(s+4,s+4);
+    if(currentEditorLang)editorState[currentEditorLang]=ta.value;
   }
 }
 function updateActiveSug(){
-  const box = document.getElementById("edSuggest");
-  if(!box) return;
-  const items = box.querySelectorAll(".sug-item");
-  for(let i = 0; i < items.length; i++) items[i].classList.toggle("active", i === activeSugIdx);
-  if(items[activeSugIdx]){ try{ items[activeSugIdx].scrollIntoView({block:"nearest"}); }catch(e){} }
+  const box=document.getElementById("edSuggest");
+  if(!box)return;
+  const items=box.querySelectorAll(".sug-item");
+  for(let i=0;i<items.length;i++)items[i].classList.toggle("active",i===activeSugIdx);
+  if(items[activeSugIdx]){try{items[activeSugIdx].scrollIntoView({block:"nearest"});}catch(e){}}
 }
 
-/* ============ اجرای کد با AI (سبک و سریع) ============ */
+/* ============ اجرای کد با AI ============ */
 async function runWithAI(code, langLabel){
   const p = `تو یک شبیه‌ساز دقیق اجرای کد ${langLabel} هستی.
 کد زیر را در ذهنت اجرا کن و فقط خروجی دقیق برنامه را برگردان.
@@ -721,77 +629,54 @@ async function runWithAI(code, langLabel){
 \`\`\`
 ${code}
 \`\`\``;
-  const d = await callAI({
-    messages: [{ role: "user", content: p }],
-    temperature: 0,
-    max_tokens: 1500,
-    request_type: "run_code"
-  });
-  const txt = (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content || "").trim();
-  return txt || "(بدون خروجی)";
+  const d = await callAI({messages:[{role:"user",content:p}],temperature:0,max_tokens:1500,request_type:"run_code"});
+  const txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||"").trim();
+  return txt||"(بدون خروجی)";
 }
-
 async function runCode(){
-  const id = currentEditorLang;
-  const cfg = EDITOR_CONFIGS[id];
-  if (!cfg) return;
-  const code = document.getElementById("edCode").value;
-  editorState[id] = code;
+  const id=currentEditorLang,cfg=EDITOR_CONFIGS[id];
+  if(!cfg)return;
+  const code=document.getElementById("edCode").value;
+  editorState[id]=code;
   hideSuggest();
-  const runBtn = document.getElementById("edRunBtn");
-  if (cfg.exec === "iframe") { showPreviewHTML(code); return; }
-  showOutputText("⏳ در حال اجرا...", false);
-  runBtn.disabled = true;
-  const oldTxt = runBtn.textContent;
-  runBtn.textContent = "⏳";
-  try {
-    const output = await runWithAI(code, cfg.label);
-    showOutputText(output, false);
-  } catch(e){
-    let msg = "❌ خطا: " + (e.message || e);
-    if (e.isRateLimit) msg = "⚠️ تعداد درخواست‌ها زیاد است. " + (e.remaining_minutes ? e.remaining_minutes + " دقیقه دیگر امتحان کنید." : "");
-    showOutputText(msg, true);
-  } finally {
-    runBtn.disabled = false;
-    runBtn.textContent = oldTxt;
-  }
+  // ✅ نمایش پنل خروجی
+  document.getElementById("edOutput").classList.remove("hide");
+  const runBtn=document.getElementById("edRunBtn");
+  if(cfg.exec==="iframe"){showPreviewHTML(code);return;}
+  showOutputText("⏳ در حال اجرا...",false);
+  runBtn.disabled=true;const oldTxt=runBtn.textContent;runBtn.textContent="⏳";
+  try{
+    const output=await runWithAI(code,cfg.label);
+    showOutputText(output,false);
+  }catch(e){
+    let msg="❌ خطا: "+(e.message||e);
+    if(e.isRateLimit)msg="⚠️ تعداد درخواست‌ها زیاد است. "+(e.remaining_minutes?e.remaining_minutes+" دقیقه دیگر امتحان کنید.":"");
+    showOutputText(msg,true);
+  }finally{runBtn.disabled=false;runBtn.textContent=oldTxt;}
 }
 async function aiHelp(){
-  const input = document.getElementById("edAiInput");
-  const btn = document.getElementById("edAiBtn");
-  const prompt = input.value.trim();
-  if(!prompt) return;
-  const id = currentEditorLang;
-  const cfg = EDITOR_CONFIGS[id];
-  if (!cfg) return;
-  const currentCode = document.getElementById("edCode").value;
-  input.disabled = true; btn.disabled = true;
-  const oldTxt = btn.textContent;
-  btn.textContent = "...";
+  const input=document.getElementById("edAiInput"),btn=document.getElementById("edAiBtn");
+  const prompt=input.value.trim();
+  if(!prompt)return;
+  const id=currentEditorLang,cfg=EDITOR_CONFIGS[id];
+  if(!cfg)return;
+  const currentCode=document.getElementById("edCode").value;
+  input.disabled=true;btn.disabled=true;
+  const oldTxt=btn.textContent;btn.textContent="...";
   hideSuggest();
-  const p = `تو یک دستیار متخصص ${cfg.label} هستی.
-درخواست: "${prompt}"
-
-کد فعلی:
-${currentCode}
-
-فقط کد کامل و آماده اجرای ${cfg.label} رو برگردون. بدون توضیح، بدون \`\`\`.`;
+  const p=`تو یک دستیار متخصص ${cfg.label} هستی.\nدرخواست: "${prompt}"\n\nکد فعلی:\n${currentCode}\n\nفقط کد کامل و آماده اجرای ${cfg.label} رو برگردون. بدون توضیح، بدون \`\`\`.`;
   try{
-    const d = await callAI({ messages: [{ role: "user", content: p }], temperature: 0.4, max_tokens: 4000, request_type: "editor_ai" });
-    let txt = (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content || "").trim();
-    txt = txt.replace(/^```[a-zA-Z0-9+#-]*\s*/i,"").replace(/```\s*$/,"").trim();
-    if(!txt) throw new Error("پاسخی نیامد");
-    document.getElementById("edCode").value = txt;
-    editorState[id] = txt;
-    if (cfg.exec === "iframe") runCode();
-    else showOutputText("✓ کد تولید شد. برای مشاهده خروجی دکمه «▶ اجرا» را بزنید.", false);
-    input.value = "";
+    const d=await callAI({messages:[{role:"user",content:p}],temperature:0.4,max_tokens:4000,request_type:"editor_ai"});
+    let txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||"").trim();
+    txt=txt.replace(/^```[a-zA-Z0-9+#-]*\s*/i,"").replace(/```\s*$/,"").trim();
+    if(!txt)throw new Error("پاسخی نیامد");
+    document.getElementById("edCode").value=txt;
+    editorState[id]=txt;
+    input.value="";
   }catch(e){
-    if(e.isRateLimit) alert("⚠️ تعداد درخواست‌ها زیاد است. " + (e.remaining_minutes ? e.remaining_minutes + " دقیقه دیگر امتحان کنید." : ""));
-    else alert("❌ " + e.message);
-  }finally{
-    input.disabled = false; btn.disabled = false; btn.textContent = oldTxt;
-  }
+    if(e.isRateLimit)alert("⚠️ تعداد درخواست‌ها زیاد است. "+(e.remaining_minutes?e.remaining_minutes+" دقیقه دیگر امتحان کنید.":""));
+    else alert("❌ "+e.message);
+  }finally{input.disabled=false;btn.disabled=false;btn.textContent=oldTxt;}
 }
 </script>
 </body>
