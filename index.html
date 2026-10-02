@@ -73,7 +73,6 @@ button.btn.gray{background:#eee;color:#333}
 .ed-ai button:disabled{background:#aaa;cursor:wait}
 .ed-body{flex:1;display:flex;overflow:hidden;min-height:0;position:relative}
 #edCode{flex:1;padding:15px;border:none;font-family:'Courier New',Consolas,monospace;font-size:13px;line-height:1.6;direction:ltr;text-align:left;resize:none;outline:none;background:#fafafa;color:#222;tab-size:4}
-/* ✅ پنل خروجی تمام‌صفحه */
 #edOutput{position:fixed;inset:0;background:#fff;z-index:400;display:flex;flex-direction:column}
 #edOutput.hide{display:none}
 .out-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 15px;background:#fff;border-bottom:2px solid #eaeaea}
@@ -144,18 +143,69 @@ button.btn.gray{background:#eee;color:#333}
 <iframe id="edPreview"></iframe>
 </div>
 <script>
+// ============================================================
+// تنظیمات Cloudflare Worker
+// ============================================================
 const WORKER_URL = "https://ancient-thunder-42b4.sadqyamyrmhmd67.workers.dev";
+const CLIENT_TOKEN = "hs_secure_2025_x7k2m9p4";
+
+// ============================================================
+// Fingerprint مرورگر برای شناسایی کاربر
+// ============================================================
 const BROWSER_FP = (function(){
-  try{const d=[navigator.userAgent,screen.width+"x"+screen.height,navigator.language,Intl.DateTimeFormat().resolvedOptions().timeZone].join("|");let h=0;for(let i=0;i<d.length;i++){h=((h<<5)-h)+d.charCodeAt(i);h=h&h;}return Math.abs(h).toString(36);}catch(e){return "unknown";}
+  try{
+    const d = [
+      navigator.userAgent,
+      screen.width + "x" + screen.height,
+      navigator.language,
+      Intl.DateTimeFormat().resolvedOptions().timeZone
+    ].join("|");
+    let h = 0;
+    for(let i = 0; i < d.length; i++){
+      h = ((h << 5) - h) + d.charCodeAt(i);
+      h = h & h;
+    }
+    return Math.abs(h).toString(36);
+  }catch(e){ return "unknown"; }
 })();
 
+// ============================================================
+// تابع کمکی برای ارسال درخواست به Worker
+// ============================================================
 async function callAI(payload){
-  const res = await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:payload.messages,temperature:payload.temperature!==undefined?payload.temperature:0.3,max_tokens:payload.max_tokens||1200,model:payload.model||"gpt-4o-mini",fingerprint:BROWSER_FP,request_type:payload.request_type||"unknown",language:CL?CL.id:"",topic:CT?CT.t:""})});
-  if(res.status===429){const err=await res.json();const e2=new Error(err.error||"تعداد درخواست‌ها زیاد است");e2.isRateLimit=true;e2.remaining_minutes=err.remaining_minutes||10;throw e2;}
-  if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error||"خطا در ارتباط با سرور");}
+  const res = await fetch(WORKER_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: payload.messages,
+      temperature: payload.temperature !== undefined ? payload.temperature : 0.3,
+      max_tokens: payload.max_tokens || 1200,
+      model: payload.model || "gpt-4o-mini",
+      fingerprint: BROWSER_FP,
+      request_type: payload.request_type || "unknown",
+      language: CL ? CL.id : "",
+      topic: CT ? CT.t : "",
+      client_token: CLIENT_TOKEN
+    })
+  });
+
+  if(res.status === 429){
+    const err = await res.json();
+    const e2 = new Error(err.error || "تعداد درخواست‌ها زیاد است");
+    e2.isRateLimit = true;
+    e2.remaining_minutes = err.remaining_minutes || 10;
+    throw e2;
+  }
+  if(!res.ok){
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "خطا در ارتباط با سرور");
+  }
   return res.json();
 }
 
+// ============================================================
+// دیتای زبان‌ها و موضوعات
+// ============================================================
 const langs=[
 {id:"html",n:"HTML",i:"📄",t:[
 {t:"ساختار پایه صفحه",l:"easy"},{t:"تگ head و title",l:"easy"},{t:"عنوان‌ها h1 تا h6",l:"easy"},{t:"پاراگراف (p)",l:"easy"},{t:"شکست خط (br, hr)",l:"easy"},{t:"کامنت‌ها",l:"easy"},{t:"متن پررنگ (b, strong)",l:"easy"},{t:"ایتالیک (i, em)",l:"easy"},{t:"زیرخط و خط‌خورده (u, s)",l:"easy"},{t:"لینک‌ها (a)",l:"easy"},{t:"لینک ایمیل و تلفن",l:"easy"},{t:"لینک داخلی (Anchor)",l:"easy"},{t:"باز کردن در تب جدید",l:"easy"},{t:"تصاویر (img)",l:"easy"},{t:"اندازه تصویر",l:"easy"},{t:"لیست نامرتب (ul)",l:"easy"},{t:"لیست مرتب (ol)",l:"easy"},{t:"لیست تو در تو",l:"easy"},{t:"لیست توصیفی (dl)",l:"easy"},{t:"صفت‌ها (Attributes)",l:"easy"},{t:"id و class",l:"easy"},{t:"div و span",l:"med"},{t:"متن از پیش فرمت‌شده (pre)",l:"med"},{t:"نقل قول (blockquote)",l:"med"},{t:"علامت‌گذاری (mark, abbr)",l:"med"},{t:"کاراکترهای خاص (Entities)",l:"med"},{t:"جدول ساده",l:"med"},{t:"جدول با سرستون",l:"med"},{t:"ادغام سلول‌ها",l:"med"},{t:"فرم پایه",l:"med"},{t:"input انواع مختلف",l:"med"},{t:"متن چندخطی (textarea)",l:"med"},{t:"دکمه‌ها (button)",l:"med"},{t:"برچسب‌ها (label)",l:"med"},{t:"لیست کشویی (select)",l:"med"},{t:"چک‌باکس و رادیو",l:"med"},{t:"آپلود فایل",l:"med"},{t:"فیلدهای تاریخ و زمان",l:"med"},{t:"دسته‌بندی فرم (fieldset)",l:"med"},{t:"اعتبارسنجی HTML5",l:"med"},{t:"تگ‌های معنایی (semantic)",l:"med"},{t:"header, nav, main",l:"hard"},{t:"section, article, aside",l:"hard"},{t:"figure و figcaption",l:"hard"},{t:"audio و video",l:"hard"},{t:"iframe و embed",l:"hard"},{t:"canvas (نقاشی)",l:"hard"},{t:"SVG در HTML",l:"hard"},{t:"picture (ریسپانسیو)",l:"hard"},{t:"details و summary",l:"hard"},{t:"dialog (مودال)",l:"hard"},{t:"متا تگ‌ها (SEO)",l:"hard"},{t:"Open Graph",l:"hard"},{t:"favicon و PWA",l:"hard"},{t:"دسترسی‌پذیری (ARIA)",l:"hard"},{t:"Web Components",l:"hard"}]},
@@ -186,6 +236,9 @@ const langs=[
 let CL=null,CT=null,quizData=[],quizIdx=0,quizScore=0;
 document.getElementById("langs").innerHTML=langs.map(l=>`<div class="card" id="card-${l.id}" onclick="pickLang('${l.id}')"><span class="ico">${l.i}</span><span class="name">${l.n}</span></div>`).join("");
 
+// ============================================================
+// تنظیمات ویرایشگرها + پیشنهادهای خودکار
+// ============================================================
 const EDITOR_CONFIGS = {
   html: { label:"HTML", exec:"iframe",
     starter:`<!DOCTYPE html>\n<html lang="fa" dir="rtl">\n<head>\n<meta charset="UTF-8">\n<title>صفحه من</title>\n<style>\nbody{font-family:Tahoma;padding:20px;background:#f0f4ff}\nh1{color:#667eea}\n</style>\n</head>\n<body>\n<h1>سلام دنیا! 👋</h1>\n<p>کد HTML خودت رو بنویس</p>\n</body>\n</html>`,
@@ -288,12 +341,18 @@ const EDITOR_CONFIGS = {
     ]}
 };
 
+// ============================================================
+// متغیرهای global
+// ============================================================
 const editorState = {};
 let currentEditorLang = null;
 let currentSuggestions = [], activeSugIdx = -1, sugRange = {start:0,end:0}, _inputTimer = null;
 const WORD_CHARS = /[a-zA-Z0-9_<>.#$@]/;
 const PAIRS = {'}':'{', ')':'(', ']':'['};
 
+// ============================================================
+// انتخاب زبان و موضوع
+// ============================================================
 function pickLang(id){
   CL=langs.find(l=>l.id===id);CT=null;
   document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
@@ -308,6 +367,7 @@ function pickLang(id){
   document.getElementById("tt").textContent=`${CL.i} ${CL.n} - یه موضوع انتخاب کن (${CL.t.length} موضوع):`;
   document.getElementById("tl").innerHTML=CL.t.map((x,i)=>`<div class="topic" onclick="pickTopic(${i})"><span>${x.t}</span><span class="tag ${x.l}">${x.l==="easy"?"آسان":x.l==="med"?"متوسط":"پیشرفته"}</span></div>`).join("");
 }
+
 function pickTopic(i){
   CT=CL.t[i];
   document.getElementById("topics").classList.add("hide");
@@ -320,6 +380,10 @@ function pickTopic(i){
   document.getElementById("actionsWrap").classList.add("hide");
   ask(false);
 }
+
+// ============================================================
+// آموزش با AI
+// ============================================================
 async function ask(again){
   const out=document.getElementById("out"),actions=document.getElementById("actionsWrap");
   const isAgain=again===true;
@@ -339,6 +403,10 @@ async function ask(again){
     actions.classList.remove("hide");
   }
 }
+
+// ============================================================
+// تبدیل Markdown به HTML
+// ============================================================
 function md(t){
   let cb=[];
   t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,l,c)=>{cb.push(`<pre>${esc(c.trim())}</pre>`);return `__CB_${cb.length-1}__`;});
@@ -355,6 +423,9 @@ function escapeHTML(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;
 function back(){document.getElementById("langs").classList.remove("hide");document.getElementById("topics").classList.add("hide");document.getElementById("res").classList.add("hide");window.scrollTo(0,0);}
 function back2(){document.getElementById("topics").classList.remove("hide");document.getElementById("res").classList.add("hide");document.getElementById("res").scrollTop=0;window.scrollTo(0,0);}
 
+// ============================================================
+// آزمون
+// ============================================================
 async function startQuiz(){
   document.getElementById("quiz").classList.remove("hide");
   document.getElementById("quizProgress").textContent="در حال ساخت سوالات...";
@@ -402,7 +473,9 @@ function showScore(){
 }
 function closeQuiz(){document.getElementById("quiz").classList.add("hide");}
 
-/* ============ ویرایشگر ============ */
+// ============================================================
+// ویرایشگر
+// ============================================================
 function openEditor(){
   const id=CL&&CL.id,cfg=EDITOR_CONFIGS[id];
   if(!cfg)return;
@@ -441,7 +514,9 @@ function showOutputText(text,isError){
   showPreviewHTML(html);
 }
 
-/* ============ Auto-indent ============ */
+// ============================================================
+// Auto-indent
+// ============================================================
 function lineStart(v,pos){let i=pos;while(i>0&&v[i-1]!=="\n")i--;return i;}
 function getIndent(v,ls){let ind="";let j=ls;while(j<v.length&&(v[j]===" "||v[j]==="\t")){ind+=v[j];j++;}return ind;}
 function smartDedent(ta,closeC,openC){
@@ -463,7 +538,9 @@ function smartDedent(ta,closeC,openC){
   if(currentEditorLang)editorState[currentEditorLang]=ta.value;
 }
 
-/* ============ Autocomplete ============ */
+// ============================================================
+// Autocomplete
+// ============================================================
 function handleInput(){
   if(!currentEditorLang)return;
   if(_inputTimer)clearTimeout(_inputTimer);
@@ -618,7 +695,9 @@ function updateActiveSug(){
   if(items[activeSugIdx]){try{items[activeSugIdx].scrollIntoView({block:"nearest"});}catch(e){}}
 }
 
-/* ============ اجرای کد با AI ============ */
+// ============================================================
+// اجرای کد با AI
+// ============================================================
 async function runWithAI(code, langLabel){
   const p = `تو یک شبیه‌ساز دقیق اجرای کد ${langLabel} هستی.
 کد زیر را در ذهنت اجرا کن و فقط خروجی دقیق برنامه را برگردان.
@@ -639,7 +718,6 @@ async function runCode(){
   const code=document.getElementById("edCode").value;
   editorState[id]=code;
   hideSuggest();
-  // ✅ نمایش پنل خروجی
   document.getElementById("edOutput").classList.remove("hide");
   const runBtn=document.getElementById("edRunBtn");
   if(cfg.exec==="iframe"){showPreviewHTML(code);return;}
@@ -654,6 +732,10 @@ async function runCode(){
     showOutputText(msg,true);
   }finally{runBtn.disabled=false;runBtn.textContent=oldTxt;}
 }
+
+// ============================================================
+// ساخت کد با AI
+// ============================================================
 async function aiHelp(){
   const input=document.getElementById("edAiInput"),btn=document.getElementById("edAiBtn");
   const prompt=input.value.trim();
@@ -680,4 +762,4 @@ async function aiHelp(){
 }
 </script>
 </body>
-    </html>
+  </html>
