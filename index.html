@@ -69,7 +69,6 @@ button.btn.gray{background:#eee;color:#333}
 .ed-ai input{flex:1;padding:10px 14px;border:2px solid #e0e0e0;border-radius:9px;font-family:Tahoma;font-size:13px;outline:none;background:#fff;color:#333;min-width:0}
 .ed-ai input:focus{border-color:#667eea}
 .ed-ai button{padding:10px 16px;background:#667eea;color:#fff;border:none;border-radius:9px;font-family:Tahoma;font-size:13px;font-weight:bold;cursor:pointer}
-.ed-ai button:hover{background:#5568d3}
 .ed-ai button:disabled{background:#aaa;cursor:wait}
 .ed-body{flex:1;display:flex;overflow:hidden;min-height:0;position:relative}
 #edCode{flex:1;padding:15px;border:none;font-family:'Courier New',Consolas,monospace;font-size:13px;line-height:1.6;direction:ltr;text-align:left;resize:none;outline:none;background:#fafafa;color:#222;tab-size:4}
@@ -150,7 +149,7 @@ const WORKER_URL = "https://ancient-thunder-42b4.sadqyamyrmhmd67.workers.dev";
 const CLIENT_TOKEN = "hs_secure_2025_x7k2m9p4";
 
 // ============================================================
-// Fingerprint مرورگر برای شناسایی کاربر
+// Fingerprint مرورگر
 // ============================================================
 const BROWSER_FP = (function(){
   try{
@@ -170,41 +169,54 @@ const BROWSER_FP = (function(){
 })();
 
 // ============================================================
-// تابع کمکی برای ارسال درخواست به Worker
+// تابع callAI - برای درخواست‌های غیر Streaming
+// (آزمون، اجرای کد، ساخت با AI)
 // ============================================================
 async function callAI(payload){
-  const res = await fetch(WORKER_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: payload.messages,
-      temperature: payload.temperature !== undefined ? payload.temperature : 0.3,
-      max_tokens: payload.max_tokens || 1200,
-      model: payload.model || "gpt-4o-mini",
-      fingerprint: BROWSER_FP,
-      request_type: payload.request_type || "unknown",
-      language: CL ? CL.id : "",
-      topic: CT ? CT.t : "",
-      client_token: CLIENT_TOKEN
-    })
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-  if(res.status === 429){
-    const err = await res.json();
-    const e2 = new Error(err.error || "تعداد درخواست‌ها زیاد است");
-    e2.isRateLimit = true;
-    e2.remaining_minutes = err.remaining_minutes || 10;
-    throw e2;
+  try{
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        messages: payload.messages,
+        temperature: payload.temperature !== undefined ? payload.temperature : 0.3,
+        max_tokens: payload.max_tokens || 1200,
+        model: payload.model || "gpt-4o-mini",
+        fingerprint: BROWSER_FP,
+        request_type: payload.request_type || "unknown",
+        language: CL ? CL.id : "",
+        topic: CT ? CT.t : "",
+        client_token: CLIENT_TOKEN
+      })
+    });
+
+    clearTimeout(timeoutId);
+
+    if(res.status === 429){
+      const err = await res.json();
+      const e2 = new Error(err.error || "تعداد درخواست‌ها زیاد است");
+      e2.isRateLimit = true;
+      e2.remaining_minutes = err.remaining_minutes || 10;
+      throw e2;
+    }
+    if(!res.ok){
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "خطا در ارتباط با سرور");
+    }
+    return res.json();
+  }catch(e){
+    clearTimeout(timeoutId);
+    if(e.name === "AbortError") throw new Error("زمان پاسخ به پایان رسید. لطفاً دوباره امتحان کنید.");
+    throw e;
   }
-  if(!res.ok){
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "خطا در ارتباط با سرور");
-  }
-  return res.json();
 }
 
 // ============================================================
-// دیتای زبان‌ها و موضوعات
+// دیتای زبان‌ها
 // ============================================================
 const langs=[
 {id:"html",n:"HTML",i:"📄",t:[
@@ -237,7 +249,7 @@ let CL=null,CT=null,quizData=[],quizIdx=0,quizScore=0;
 document.getElementById("langs").innerHTML=langs.map(l=>`<div class="card" id="card-${l.id}" onclick="pickLang('${l.id}')"><span class="ico">${l.i}</span><span class="name">${l.n}</span></div>`).join("");
 
 // ============================================================
-// تنظیمات ویرایشگرها + پیشنهادهای خودکار
+// تنظیمات ویرایشگرها
 // ============================================================
 const EDITOR_CONFIGS = {
   html: { label:"HTML", exec:"iframe",
@@ -341,9 +353,6 @@ const EDITOR_CONFIGS = {
     ]}
 };
 
-// ============================================================
-// متغیرهای global
-// ============================================================
 const editorState = {};
 let currentEditorLang = null;
 let currentSuggestions = [], activeSugIdx = -1, sugRange = {start:0,end:0}, _inputTimer = null;
@@ -375,37 +384,115 @@ function pickTopic(i){
   document.getElementById("langName").textContent=CL.i+' '+CL.n;
   document.getElementById("topicName").textContent=CT.t;
   document.getElementById("res").scrollTop=0;
-  document.getElementById("out").className="load";
-  document.getElementById("out").textContent=`در حال آموزش ${CT.t}`;
   document.getElementById("actionsWrap").classList.add("hide");
   ask(false);
 }
 
 // ============================================================
-// آموزش با AI
+// آموزش با AI - با Streaming (پخش زنده)
 // ============================================================
 async function ask(again){
   const out=document.getElementById("out"),actions=document.getElementById("actionsWrap");
   const isAgain=again===true;
   actions.classList.add("hide");
-  const p=isAgain?`موضوع "${CT.t}" از ${CL.n} رو ساده و سریع توضیح بده. از مثال روزمره استفاده کن. کوتاه و مفید.`:`موضوع "${CT.t}" از ${CL.n} رو سریع و کوتاه آموزش بده.\n## توضیح ساده\n## نمونه کد\n\`\`\`\n[کد]\n\`\`\`\n## نکته طلایی\nکوتاه، فارسی.`;
-  out.className="load";out.textContent=`در حال آموزش ${CT.t}`;
+  const p=isAgain
+    ?`موضوع "${CT.t}" از ${CL.n} رو ساده و سریع توضیح بده. از مثال روزمره استفاده کن. کوتاه و مفید.`
+    :`موضوع "${CT.t}" از ${CL.n} رو سریع و کوتاه آموزش بده.\n## توضیح ساده\n## نمونه کد\n\`\`\`\n[کد]\n\`\`\`\n## نکته طلایی\nکوتاه، فارسی.`;
+
+  out.className="";
+  out.innerHTML='<div class="load">در حال آموزش '+CT.t+'</div>';
   document.getElementById("res").scrollTop=0;
+
+  let fullText="";
+  let displayDiv=null;
+  let firstChunk=true;
+
   try{
-    const d=await callAI({messages:[{role:"user",content:p}],temperature:0.3,max_tokens:1200,request_type:isAgain?"ask_again":"ask"});
-    const txt=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content;
-    if(!txt)throw new Error("پاسخی نیامد");
-    out.className="";out.innerHTML=md(txt);
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: p }],
+        temperature: 0.3,
+        max_tokens: isAgain ? 600 : 900,
+        model: "gpt-4o-mini",
+        fingerprint: BROWSER_FP,
+        request_type: isAgain ? "ask_again" : "ask",
+        language: CL ? CL.id : "",
+        topic: CT ? CT.t : "",
+        client_token: CLIENT_TOKEN,
+        stream: true
+      })
+    });
+
+    if(res.status === 429){
+      const err = await res.json();
+      const e2 = new Error(err.error || "تعداد درخواست‌ها زیاد است");
+      e2.isRateLimit = true;
+      e2.remaining_minutes = err.remaining_minutes || 10;
+      throw e2;
+    }
+    if(!res.ok){
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "خطا در ارتباط با سرور");
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while(true){
+      const { done, value } = await reader.read();
+      if(done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+
+      for(const line of lines){
+        if(!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if(data === "[DONE]") continue;
+
+        try{
+          const json = JSON.parse(data);
+          const delta = (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content) || "";
+          if(!delta) continue;
+
+          fullText += delta;
+
+          if(firstChunk){
+            out.innerHTML = "";
+            displayDiv = document.createElement("div");
+            displayDiv.style.lineHeight = "2";
+            displayDiv.style.fontSize = "15px";
+            out.appendChild(displayDiv);
+            firstChunk = false;
+          }
+          displayDiv.innerHTML = esc(fullText).replace(/\n/g, "<br>");
+        }catch(e){}
+      }
+    }
+
+    // رندر نهایی با Markdown
+    if(fullText){
+      out.innerHTML = md(fullText);
+    } else {
+      out.innerHTML = '<div class="err">پاسخی دریافت نشد</div>';
+    }
     actions.classList.remove("hide");
+
   }catch(e){
     out.className="err";
-    out.textContent=e.isRateLimit?"⚠️ تعداد درخواست‌ها زیاد است. "+(e.remaining_minutes?e.remaining_minutes+" دقیقه دیگر امتحان کنید.":""):"❌ "+e.message;
+    out.textContent=e.isRateLimit
+      ? "⚠️ تعداد درخواست‌ها زیاد است. "+(e.remaining_minutes?e.remaining_minutes+" دقیقه دیگر امتحان کنید.":"")
+      : "❌ "+e.message;
     actions.classList.remove("hide");
   }
 }
 
 // ============================================================
-// تبدیل Markdown به HTML
+// Markdown
 // ============================================================
 function md(t){
   let cb=[];
@@ -497,9 +584,7 @@ function closeEditor(){
   closeOutput();
   document.getElementById("editor").classList.add("hide");
 }
-function closeOutput(){
-  document.getElementById("edOutput").classList.add("hide");
-}
+function closeOutput(){document.getElementById("edOutput").classList.add("hide");}
 function showPreviewHTML(html){
   const iframe=document.getElementById("edPreview");
   const doc=iframe.contentDocument||iframe.contentWindow.document;
@@ -708,7 +793,7 @@ async function runWithAI(code, langLabel){
 \`\`\`
 ${code}
 \`\`\``;
-  const d = await callAI({messages:[{role:"user",content:p}],temperature:0,max_tokens:1500,request_type:"run_code"});
+  const d = await callAI({messages:[{role:"user",content:p}],temperature:0,max_tokens:800,request_type:"run_code"});
   const txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||"").trim();
   return txt||"(بدون خروجی)";
 }
@@ -748,7 +833,7 @@ async function aiHelp(){
   hideSuggest();
   const p=`تو یک دستیار متخصص ${cfg.label} هستی.\nدرخواست: "${prompt}"\n\nکد فعلی:\n${currentCode}\n\nفقط کد کامل و آماده اجرای ${cfg.label} رو برگردون. بدون توضیح، بدون \`\`\`.`;
   try{
-    const d=await callAI({messages:[{role:"user",content:p}],temperature:0.4,max_tokens:4000,request_type:"editor_ai"});
+    const d=await callAI({messages:[{role:"user",content:p}],temperature:0.4,max_tokens:2500,request_type:"editor_ai"});
     let txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content||"").trim();
     txt=txt.replace(/^```[a-zA-Z0-9+#-]*\s*/i,"").replace(/```\s*$/,"").trim();
     if(!txt)throw new Error("پاسخی نیامد");
@@ -762,4 +847,4 @@ async function aiHelp(){
 }
 </script>
 </body>
-  </html>
+                                                                                 </html>
