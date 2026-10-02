@@ -38,6 +38,8 @@ button.btn.gray{background:#eee;color:#333}
 #out p{margin-bottom:8px;line-height:1.9}
 #out pre{background:#1e1e1e;color:#d4d4d4;padding:15px;border-radius:8px;direction:ltr;text-align:left;font-size:13px;line-height:1.7;margin:10px 0;font-family:'Courier New',Consolas,monospace;overflow-x:auto;white-space:pre}
 #out code{background:#2d2d2d;color:#4ec9b0;padding:2px 6px;border-radius:4px;font-family:monospace;direction:ltr;display:inline-block}
+.cursor{display:inline-block;width:8px;height:16px;background:#667eea;vertical-align:middle;margin-right:2px;animation:blink .8s infinite}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
 .actions-wrap{display:flex;gap:10px;justify-content:flex-start;margin-top:25px;padding:20px 0;border-top:1px solid #eaeaea;flex-wrap:wrap}
 .actions-wrap.hide{display:none!important}
 .btn-act{padding:11px 18px;border:none;border-radius:10px;background:#667eea;color:#fff;font-family:Tahoma;font-size:14px;font-weight:bold;cursor:pointer}
@@ -170,7 +172,6 @@ const BROWSER_FP = (function(){
 
 // ============================================================
 // تابع callAI - برای درخواست‌های غیر Streaming
-// (آزمون، اجرای کد، ساخت با AI)
 // ============================================================
 async function callAI(payload){
   const controller = new AbortController();
@@ -389,7 +390,7 @@ function pickTopic(i){
 }
 
 // ============================================================
-// آموزش با AI - با Streaming (پخش زنده)
+// آموزش با AI - Streaming + Markdown همون لحظه
 // ============================================================
 async function ask(again){
   const out=document.getElementById("out"),actions=document.getElementById("actionsWrap");
@@ -404,8 +405,7 @@ async function ask(again){
   document.getElementById("res").scrollTop=0;
 
   let fullText="";
-  let displayDiv=null;
-  let firstChunk=true;
+  let started=false;
 
   try{
     const res = await fetch(WORKER_URL, {
@@ -461,22 +461,17 @@ async function ask(again){
 
           fullText += delta;
 
-          if(firstChunk){
+          if(!started){
             out.innerHTML = "";
-            displayDiv = document.createElement("div");
-            displayDiv.style.lineHeight = "2";
-            displayDiv.style.fontSize = "15px";
-            out.appendChild(displayDiv);
-            firstChunk = false;
+            started = true;
           }
-          displayDiv.innerHTML = esc(fullText).replace(/\n/g, "<br>");
+          out.innerHTML = md(fullText, true) + '<span class="cursor"></span>';
         }catch(e){}
       }
     }
 
-    // رندر نهایی با Markdown
     if(fullText){
-      out.innerHTML = md(fullText);
+      out.innerHTML = md(fullText, false);
     } else {
       out.innerHTML = '<div class="err">پاسخی دریافت نشد</div>';
     }
@@ -492,9 +487,16 @@ async function ask(again){
 }
 
 // ============================================================
-// Markdown
+// Markdown - با پشتیبانی Streaming
 // ============================================================
-function md(t){
+function md(t, isStreaming){
+  if(isStreaming){
+    const count = (t.match(/```/g) || []).length;
+    if(count % 2 === 1){
+      t = t + "\n```";
+    }
+  }
+
   let cb=[];
   t=t.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,l,c)=>{cb.push(`<pre>${esc(c.trim())}</pre>`);return `__CB_${cb.length-1}__`;});
   t=esc(t);
@@ -847,4 +849,4 @@ async function aiHelp(){
 }
 </script>
 </body>
-                                                                                 </html>
+  </html>
