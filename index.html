@@ -97,6 +97,21 @@ button.btn.gray{background:#eee;color:#333}
 .ed-output-close:hover{background:rgba(192,57,43,1)}
 #edPreview{width:100%;height:100%;border:none;background:#fff;display:block}
 #editor.fullscreen .ed-ai{display:none!important}
+
+/* ===== پنل آفلاین ===== */
+#offlinePanel{position:fixed;inset:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);z-index:9999;display:flex;align-items:center;justify-content:center;padding:25px;color:#fff;text-align:center;direction:rtl}
+#offlinePanel.hide{display:none!important}
+.offline-box{max-width:420px;width:100%}
+.offline-icon{font-size:80px;margin-bottom:20px;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.75}}
+.offline-title{font-size:22px;font-weight:bold;margin-bottom:14px}
+.offline-desc{font-size:15px;line-height:2;opacity:.92;margin-bottom:25px}
+.offline-spinner{width:52px;height:52px;margin:0 auto 20px;border:5px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.offline-hint{font-size:13px;opacity:.8;line-height:1.9}
+.offline-retry{margin-top:22px;padding:12px 28px;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);color:#fff;border-radius:30px;font-family:Tahoma;font-size:14px;font-weight:bold;cursor:pointer;transition:background .2s}
+.offline-retry:hover{background:rgba(255,255,255,.32)}
+
 @media(max-width:600px){
   body{padding:10px}
   .page-title{font-size:18px;margin-bottom:18px;padding-bottom:12px}
@@ -116,10 +131,26 @@ button.btn.gray{background:#eee;color:#333}
   .ed-ai input{font-size:12.5px;padding:8px 10px}
   #edCode{font-size:13px;padding:12px}
   .ed-output-close{padding:9px 15px;font-size:12.5px;top:10px;right:10px}
+  .offline-icon{font-size:64px}
+  .offline-title{font-size:19px}
+  .offline-desc{font-size:14px}
 }
 </style>
 </head>
 <body>
+
+<!-- ===== پنل آفلاین ===== -->
+<div id="offlinePanel" class="hide">
+  <div class="offline-box">
+    <div class="offline-icon">📡</div>
+    <div class="offline-title">در حال اتصال...</div>
+    <div class="offline-spinner"></div>
+    <div class="offline-desc">اتصال اینترنت شما قطع است.<br>لطفاً اینترنت خود را روشن کنید.</div>
+    <div class="offline-hint">به محض برقراری اتصال، به‌صورت خودکار وارد برنامه می‌شوید.</div>
+    <button class="offline-retry" onclick="checkOnline(true)">🔄 تلاش دوباره</button>
+  </div>
+</div>
+
 <div class="box">
 <div id="pageTitle" class="page-title">یک زبان برنامه‌نویسی انتخاب کنید</div>
 <div id="langs" class="grid"></div>
@@ -176,6 +207,43 @@ button.btn.gray{background:#eee;color:#333}
 </div>
 
 <script>
+/* ====== مدیریت پنل آفلاین ====== */
+(function(){
+  const panel = document.getElementById("offlinePanel");
+  let lastCheck = 0;
+
+  function showPanel(){ if(panel) panel.classList.remove("hide"); }
+  function hidePanel(){ if(panel) panel.classList.add("hide"); }
+
+  // بررسی وضعیت
+  window.checkOnline = function(manual){
+    const now = Date.now();
+    if(manual && now - lastCheck < 1200) return;
+    lastCheck = now;
+    if(navigator.onLine){
+      hidePanel();
+    } else {
+      showPanel();
+    }
+  };
+
+  window.addEventListener("online", function(){
+    // با کمی تأخیر تا اتصال واقعاً برقرار شود
+    setTimeout(function(){ if(navigator.onLine) hidePanel(); }, 500);
+  });
+  window.addEventListener("offline", function(){ showPanel(); });
+
+  // بررسی اولیه
+  if(!navigator.onLine) showPanel(); else hidePanel();
+
+  // بررسی دوره‌ای (هر ۳ ثانیه وقتی آفلاین هستیم)
+  setInterval(function(){
+    if(!navigator.onLine && panel && panel.classList.contains("hide")) showPanel();
+    if(navigator.onLine && panel && !panel.classList.contains("hide")) hidePanel();
+  }, 3000);
+})();
+/* ====== پایان مدیریت پنل آفلاین ====== */
+
 const WORKER_URL = "https://ancient-thunder-42b4.sadqyamyrmhmd67.workers.dev";
 
 const BROWSER_FP = (function() {
