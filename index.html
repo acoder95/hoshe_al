@@ -228,23 +228,22 @@ button.btn.gray{background:#eee;color:#333}
   };
 
   window.addEventListener("online", function(){
-    // با کمی تأخیر تا اتصال واقعاً برقرار شود
     setTimeout(function(){ if(navigator.onLine) hidePanel(); }, 500);
   });
   window.addEventListener("offline", function(){ showPanel(); });
 
-  // بررسی اولیه
   if(!navigator.onLine) showPanel(); else hidePanel();
 
-  // بررسی دوره‌ای (هر ۳ ثانیه وقتی آفلاین هستیم)
   setInterval(function(){
     if(!navigator.onLine && panel && panel.classList.contains("hide")) showPanel();
     if(navigator.onLine && panel && !panel.classList.contains("hide")) hidePanel();
   }, 3000);
 })();
+
 /* ====== پایان مدیریت پنل آفلاین ====== */
 
-const WORKER_URL = "https://ancient-thunder-42b4.sadqyamyrmhmd67.workers.dev";
+// 🔴 اینجا آدرس وال تاون خودت را قرار بده:
+const WORKER_URL = "https://sadqyamyrmhmd67-al-nivisi.web.val.run";
 
 const BROWSER_FP = (function() {
   try {
@@ -1147,7 +1146,7 @@ async function runCode(){
     try{
       const output=await runSQL(code);
       showOutputText(output,false);
-    }catch(e){showOutputText("❌ خطا: "+(e.message||e),true);}
+    }catch(e){showOutputText("❌ خطا: "+(e.message||e),false);}
     finally{runBtn.disabled=false;runBtn.textContent=oldTxt;}
     return;
   }
