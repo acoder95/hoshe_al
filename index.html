@@ -98,7 +98,6 @@ button.btn.gray{background:#eee;color:#333}
 #edPreview{width:100%;height:100%;border:none;background:#fff;display:block}
 #editor.fullscreen .ed-ai{display:none!important}
 
-/* ===== پنل آفلاین ===== */
 #offlinePanel{position:fixed;inset:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);z-index:9999;display:flex;align-items:center;justify-content:center;padding:25px;color:#fff;text-align:center;direction:rtl}
 #offlinePanel.hide{display:none!important}
 .offline-box{max-width:420px;width:100%}
@@ -139,7 +138,6 @@ button.btn.gray{background:#eee;color:#333}
 </head>
 <body>
 
-<!-- ===== پنل آفلاین ===== -->
 <div id="offlinePanel" class="hide">
   <div class="offline-box">
     <div class="offline-icon">📡</div>
@@ -215,7 +213,6 @@ button.btn.gray{background:#eee;color:#333}
   function showPanel(){ if(panel) panel.classList.remove("hide"); }
   function hidePanel(){ if(panel) panel.classList.add("hide"); }
 
-  // بررسی وضعیت
   window.checkOnline = function(manual){
     const now = Date.now();
     if(manual && now - lastCheck < 1200) return;
@@ -240,9 +237,7 @@ button.btn.gray{background:#eee;color:#333}
   }, 3000);
 })();
 
-/* ====== پایان مدیریت پنل آفلاین ====== */
-
-// 🔴 اینجا آدرس وال تاون خودت را قرار بده:
+/* ====== آدرس وال‌تاون (اینجا رو دست نزن، درست تنظیم شده) ====== */
 const WORKER_URL = "https://sadqyamyrmhmd67-al-nivisi.web.val.run";
 
 const BROWSER_FP = (function() {
@@ -1205,4 +1200,4 @@ async function aiHelp(){
 }
 </script>
 </body>
-  </html>
+                                                                                                                               </html>
