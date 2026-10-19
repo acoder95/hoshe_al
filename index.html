@@ -55,7 +55,7 @@ button.btn.gray{background:#eee;color:#333}
 .load{text-align:center;padding:40px;color:#667eea;font-weight:bold;font-size:16px}
 .load::after{content:'...';animation:d 1.2s infinite}
 @keyframes d{0%,20%{content:'.'}40%{content:'..'}60%,100%{content:'...'}}
-.err{background:#fff5f5;border-right:4px solid #e74c3c;color:#e74c3c;padding:20px;border-radius:10px}
+.err{background:#fff5f5;border-right:4px solid #e74c3c;color:#e74c3c;padding:20px;border-radius:10px;line-height:1.6}
 .hide{display:none!important}
 .topics-title{font-size:16px;color:#333;margin:15px 0}
 #quiz{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:center;justify-content:center;padding:15px}
@@ -237,8 +237,8 @@ button.btn.gray{background:#eee;color:#333}
   }, 3000);
 })();
 
-/* ====== آدرس وال‌تاون (اینجا رو دست نزن، درست تنظیم شده) ====== */
-const WORKER_URL = "https://sadqyamyrmhmd67-al-nivisi.web.val.run";
+/* ====== آدرس وال‌تاون (آپدیت شد) ====== */
+const WORKER_URL = "https://sadqyamyrmhmd67--c2993618cb0f11f1bbb61607ee4eb77e.web.val.run";
 
 const BROWSER_FP = (function() {
   try {
@@ -274,7 +274,7 @@ async function callAI(payload, _retry){
   } catch(fe){
     clearTimeout(timeoutId);
     if(!_retry){ await new Promise(r=>setTimeout(r,800)); return callAI(payload, true); }
-    throw new Error("🌐 اتصال برقرار نشد. اینترنت را چک کن.");
+    throw new Error("خطای اتصال: " + fe.message); // نمایش خطای واقعی
   }
   clearTimeout(timeoutId);
 
@@ -812,7 +812,7 @@ async function ask(again){
   }catch(e){
     out.className="err";
     if(e.isRateLimit)out.textContent="⚠️ "+(e.remaining_minutes?e.remaining_minutes+" دقیقه دیگر امتحان کنید.":"تعداد درخواست‌ها زیاد است");
-    else out.textContent="❌ "+e.message;
+    else out.textContent="❌ "+(e.message || "خطای ناشناخته");
     actions.classList.remove("hide");
   }
 }
@@ -1193,11 +1193,11 @@ async function aiHelp(){
     }
   }catch(e){
     if(e.isRateLimit)alert("⚠️ تعداد درخواست‌ها زیاد است.");
-    else alert("❌ "+e.message);
+    else alert("❌ "+(e.message || "خطای ناشناخته"));
   }finally{
     input.disabled=false;btn.disabled=false;btn.textContent=oldTxt;
   }
 }
 </script>
 </body>
-                                                                                                                               </html>
+  </html>
