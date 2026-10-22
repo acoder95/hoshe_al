@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ویرایشگر کد</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Tahoma,sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:#1e1e1e;direction:rtl;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+
+/* هدر */
+.ed-header{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#252526;color:#fff;border-bottom:1px solid #333}
+.btn{padding:8px 15px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;background:#555;color:#fff;font-family:Tahoma}
+.btn:active{background:#444}
+.btn.run{background:#27ae60}
+.btn.run:active{background:#219a52}
+.ed-title{font-weight:bold;font-size:14px}
+
+/* بدنه ویرایشگر */
+.ed-body{flex:1;position:relative;overflow:hidden;background:#1e1e1e}
+.editor-container{position:relative;width:100%;height:100%}
+#edHighlight, #edCode{
+    margin:0; padding:15px; border:0; outline:0;
+    font-family:'Consolas','Courier New',monospace; font-size:14px; line-height:1.6;
+    white-space:pre; word-wrap:normal; tab-size:4;
+    position:absolute; top:0; left:0; width:100%; height:100%; direction:ltr; text-align:left;
+    box-sizing:border-box;
+}
+#edHighlight{color:#d4d4d4; pointer-events:none; z-index:1; overflow:hidden}
+#edCode{color:transparent; background:transparent; caret-color:#fff; z-index:2; overflow:auto; resize:none}
+
+/* رنگ‌های کد */
+.token-keyword { color: #C586C0; font-weight: bold; }
+.token-string { color: #CE9178; }
+.token-comment { color: #6A9955; font-style: italic; }
+.token-number { color: #B5CEA8; }
+
+/* باکس پیشنهاد کد (Auto-complete) */
+.autocomplete-box{position:absolute; background:#252526; border:1px solid #454545; border-radius:5px; box-shadow:0 5px 15px rgba(0,0,0,0.5); z-index:10; max-height:150px; overflow-y:auto; display:none; min-width:120px}
+.ac-item{padding:8px 12px; color:#fff; font-family:monospace; font-size:14px; cursor:pointer; border-bottom:1px solid #333}
+.ac-item:last-child{border-bottom:none}
+.ac-item.active, .ac-item:hover{background:#094771; color:#fff}
+
+/* صفحه خروجی */
+#edOut{display:none; position:fixed; inset:0; background:#fff; z-index:100; flex-direction:column}
+.out-head{padding:10px; background:#eee; display:flex; justify-content:space-between; align-items:center}
+#edOutText{padding:15px; overflow:auto; flex:1; direction:ltr; text-align:left; font-family:monospace; white-space:pre-wrap; margin:0; color:#333}
+#edPreview{width:100%; height:100%; border:none; background:#fff; display:none}
+</style>
+</head>
+<body>
+
+<!-- هدر ویرایشگر -->
+<div class="ed-header">
+    <button class="btn" onclick="window.location.href='index.html'">← بازگشت</button>
+    <div class="ed-title" id="edTitle">ویرایشگر</div>
+    <button class="btn run" onclick="runCode()" id="runBtn">▶ اجرا</button>
+</div>
+
+<!-- محیط کد -->
+<div class="ed-body">
+    <div class="editor-container">
+        <pre id="edHighlight"></pre>
+        <textarea id="edCode" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+    </div>
+    <div id="autoCompleteBox" class="autocomplete-box"></div>
+</div>
+
+<!-- خروجی -->
+<div id="edOut">
+    <div class="out-head">
+        <span style="font-weight:bold">خروجی</span>
+        <button class="btn" onclick="closeOut()">✕ بستن</button>
+    </div>
+    <pre id="edOutText"></pre>
+    <iframe id="edPreview" sandbox="allow-scripts allow-same-origin allow-modals allow-forms allow-popups"></iframe>
+</div>
+
+<script>
+// --- تنظیمات زبان‌ها ---
+const urlParams = new URLSearchParams(window.location.search);
+const currentLang = urlParams.get('lang') || 'html';
+
+const LANG_CONFIGS = {
+    html: { 
+        label: "HTML", exec: "iframe",
+        starter: `<!DOCTYPE html>\n<html>\n<head>\n  <title>Test</title>\n</head>\n<body>\n  <h1>سلام دنیا</h1>\n</body>\n</html>`,
+        keywords: ['html', 'head', 'body', 'div', 'span', 'h1', 'p', 'a', 'img', 'ul', 'li', 'table', 'tr', 'td', 'form', 'input', 'button', 'script', 'style', 'class', 'id', 'href', 'src']
+    },
+    py: { 
+        label: "Python", exec: "pyodide",
+        starter: `def hello(name):\n    print(f"Hello {name}")\n\nhello("Ali")`,
+        keywords: ['def', 'class', 'import', 'from', 'return', 'if', 'elif', 'else', 'for', 'while', 'try', 'except', 'print', 'input', 'len', 'range', 'int', 'str', 'float', 'list', 'dict', 'set', 'tuple', 'lambda']
+    },
+    java: { 
+        label: "Java", exec: "none",
+        starter: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello");\n    }\n}`,
+        keywords: ['public', 'private', 'class', 'static', 'void', 'int', 'String', 'if', 'else', 'for', 'while', 'return', 'new', 'import', 'package']
+    },
+    cs: { 
+        label: "C#", exec: "none",
+        starter: `using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello");\n    }\n}`,
+        keywords: ['using', 'namespace', 'class', 'static', 'void', 'int', 'string', 'if', 'else', 'for', 'while', 'return', 'public', 'private']
+    },
+    cpp: { 
+        label: "C++", exec: "none",
+        starter: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello";\n    return 0;\n}`,
+        keywords: ['include', 'using', 'namespace', 'int', 'void', 'char', 'float', 'double', 'if', 'else', 'for', 'while', 'return', 'cout', 'cin']
+    },
+    js: { 
+        label: "JavaScript", exec: "js",
+        starter: `let name = "Ali";\nconsole.log("Hello " + name);\n\nfor(let i=0; i<3; i++) {\n    console.log(i);\n}`,
+        keywords: ['let', 'const', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'console', 'log', 'document', 'window', 'new', 'this']
+    }
+};
+
+const cfg = LANG_CONFIGS[currentLang] || LANG_CONFIGS.html;
+const ta = document.getElementById('edCode');
+const hl = document.getElementById('edHighlight');
+const acBox = document.getElementById('autoCompleteBox');
+
+document.getElementById('edTitle').textContent = "ویرایشگر " + cfg.label;
+ta.value = cfg.starter;
+
+// --- ۱. سیستم رنگ‌آمیزی (بهینه بدون لگ) ---
+let highTimer = null;
+function updateHighlight() {
+    if (highTimer) clearTimeout(highTimer);
+    highTimer = setTimeout(() => {
+        let text = ta.value;
+        if (text.endsWith('\n')) text += ' '; // جلوگیری از پرش خط آخر
+        
+        // تبدیل کاراکترها برای HTML
+        let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        
+        // ۱. محافظت از رشته‌ها
+        const strings = [];
+        html = html.replace(/(["'])(.*?)\1/g, (match) => {
+            const id = `__S${strings.length}__`;
+            strings.push(`<span class="token-string">${match}</span>`);
+            return id;
+        });
+        
+        // ۲. کامنت‌ها
+        html = html.replace(/(\/\/.*|#.*)/g, '<span class="token-comment">$1</span>');
+        
+        // ۳. کلمات کلیدی
+        const keywordRegex = new RegExp(`\\b(${cfg.keywords.join('|')})\\b`, 'g');
+        html = html.replace(keywordRegex, '<span class="token-keyword">$1</span>');
+        
+        // ۴. اعداد
+        html = html.replace(/\b(\d+)\b/g, '<span class="token-number">$1</span>');
+        
+        // ۵. برگرداندن رشته‌ها
+        html = html.replace(/__S(\d+)__/g, (match, idx) => strings[parseInt(idx)]);
+        
+        hl.innerHTML = html;
+        syncScroll();
+    }, 30);
+}
+
+function syncScroll() {
+    hl.scrollTop = ta.scrollTop;
+    hl.scrollLeft = ta.scrollLeft;
+}
+
+ta.addEventListener('scroll', syncScroll);
+ta.addEventListener('input', () => {
+    updateHighlight();
+    handleAutoComplete();
+});
+
+// --- ۲. سیستم پیشنهاد کد (Auto-Complete) ---
+let acActiveIdx = -1;
+
+function handleAutoComplete() {
+    const pos = ta.selectionStart;
+    const val = ta.value;
+    
+    // پیدا کردن کلمه فعلی
+    const start = val.lastIndexOf('\n', pos - 1) + 1;
+    const lineText = val.substring(start, pos);
+    const match = lineText.match(/[a-zA-Z_]\w*$/);
+    
+    if (!match) {
+        acBox.style.display = 'none';
+        return;
+    }
+    
+    const word = match[0].toLowerCase();
+    const matches = cfg.keywords.filter(k => k.toLowerCase().startsWith(word) && k !== word);
+    
+    if (matches.length === 0) {
+        acBox.style.display = 'none';
+        return;
+    }
+    
+    // نمایش باکس پیشنهاد
+    acBox.innerHTML = matches.map((m, i) => 
+        `<div class="ac-item ${i === 0 ? 'active' : ''}" onclick="applyAutoComplete('${m}')">${m}</div>`
+    ).join('');
+    
+    acBox.style.display = 'block';
+    acActiveIdx = 0;
+    
+    // موقعیت باکس (نزدیک به کلمه فعلی)
+    // برای سادگی در موبایل، باکس رو بالای کیبورد و پایین صفحه ثابت میکنیم
+    acBox.style.top = '50%';
+    acBox.style.left = '10px';
+}
+
+function applyAutoComplete(word) {
+    const pos = ta.selectionStart;
+    const val = ta.value;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const lineText = val.substring(lineStart, pos);
+    const match = lineText.match(/[a-zA-Z_]\w*$/);
+    
+    if (match) {
+        const start = pos - match[0].length;
+        ta.value = val.substring(0, start) + word + val.substring(pos);
+        ta.selectionStart = ta.selectionEnd = start + word.length;
+    }
+    
+    acBox.style.display = 'none';
+    updateHighlight();
+    ta.focus();
+}
+
+// کنترل کیبورد برای باکس پیشنهاد
+ta.addEventListener('keydown', (e) => {
+    if (acBox.style.display === 'block') {
+        const items = acBox.querySelectorAll('.ac-item');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            acActiveIdx = (acActiveIdx + 1) % items.length;
+            updateAcActive(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            acActiveIdx = (acActiveIdx - 1 + items.length) % items.length;
+            updateAcActive(items);
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+            if (acActiveIdx >= 0 && items[acActiveIdx]) {
+                e.preventDefault();
+                applyAutoComplete(items[acActiveIdx].textContent);
+            }
+        } else if (e.key === 'Escape') {
+            acBox.style.display = 'none';
+        }
+    }
+    
+    // تورفتگی خودکار
+    if (e.key === 'Enter') {
+        const pos = ta.selectionStart;
+        const val = ta.value;
+        const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+        const currentLine = val.substring(lineStart, pos);
+        
+        const indentMatch = currentLine.match(/^(\s*)/);
+        const currentIndent = indentMatch ? indentMatch[1] : "";
+        const trimmed = currentLine.trim();
+        
+        let newIndent = currentIndent;
+        if (/[{[(]$/.test(trimmed) || (trimmed.endsWith(':') && !trimmed.startsWith('#'))) {
+            newIndent += '    '; // ۴ فاصله جلوتر
+        }
+        
+        e.preventDefault();
+        ta.value = val.substring(0, pos) + '\n' + newIndent + val.substring(pos);
+        ta.selectionStart = ta.selectionEnd = pos + 1 + newIndent.length;
+        updateHighlight();
+    }
+    
+    if (e.key === 'Tab' && acBox.style.display !== 'block') {
+        e.preventDefault();
+        const pos = ta.selectionStart;
+        ta.value = ta.value.substring(0, pos) + "    " + ta.value.substring(pos);
+        ta.selectionStart = ta.selectionEnd = pos + 4;
+        updateHighlight();
+    }
+});
+
+function updateAcActive(items) {
+    items.forEach((item, i) => item.classList.toggle('active', i === acActiveIdx));
+    if (items[acActiveIdx]) items[acActiveIdx].scrollIntoView({block: 'nearest'});
+}
+
+// بستن باکس وقتی جایی کلیک شد
+document.addEventListener('click', (e) => {
+    if (!acBox.contains(e.target) && e.target !== ta) {
+        acBox.style.display = 'none';
+    }
+});
+
+// --- ۳. سیستم اجرای کد ---
+let pyodideReady = false;
+async function runCode() {
+    const out = document.getElementById('edOut');
+    const outText = document.getElementById('edOutText');
+    const iframe = document.getElementById('edPreview');
+    const runBtn = document.getElementById('runBtn');
+    
+    out.style.display = 'flex';
+    outText.style.display = 'block';
+    iframe.style.display = 'none';
+    outText.textContent = "در حال پردازش...";
+    runBtn.disabled = true;
+    
+    const code = ta.value;
+    
+    // HTML
+    if (cfg.exec === 'iframe') {
+        outText.style.display = 'none';
+        iframe.style.display = 'block';
+        iframe.srcdoc = code;
+        runBtn.disabled = false;
+        return;
+    }
+    
+    // JS
+    if (cfg.exec === 'js') {
+        try {
+            let logs = [];
+            const originalLog = console.log;
+            console.log = (...args) => logs.push(args.join(" "));
+            eval(code);
+            console.log = originalLog;
+            outText.textContent = logs.join("\n") || "اجرا شد (بدون خروجی)";
+        } catch(e) {
+            outText.textContent = "❌ خطا: " + e.message;
+        }
+        runBtn.disabled = false;
+        return;
+    }
+    
+    // Python
+    if (cfg.exec === 'pyodide') {
+        try {
+            if (!window.loadPyodide) {
+                outText.textContent = "⏳ دانلود موتور پایتون (فقط بار اول)...";
+                await new Promise((res, rej) => {
+                    const s = document.createElement("script");
+                    s.src = "https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js";
+                    s.onload = res; s.onerror = rej;
+                    document.head.appendChild(s);
+                });
+            }
+            const py = await loadPyodide();
+            
+            await py.runPythonAsync(`
+import sys, io
+sys.stdout = io.StringIO()
+sys.stderr = io.StringIO()
+`);
+            try {
+                await py.runPythonAsync(code);
+            } catch(e) {
+                if (e.message.includes("SystemExit")) throw new Error("برنامه با دستور exit بسته شد.");
+                throw e;
+            }
+            
+            const stdout = py.runPython("sys.stdout.getvalue()");
+            const stderr = py.runPython("sys.stderr.getvalue()");
+            outText.textContent = (stdout + stderr) || "(بدون خروجی)";
+        } catch(e) {
+            outText.textContent = "❌ خطای پایتون:\n" + e.message;
+        }
+        runBtn.disabled = false;
+        return;
+    }
+    
+    // بقیه زبان‌ها
+    outText.textContent = "⚠️ اجرای این زبان در مرورگر ممکن نیست.\nکد خود را در یک کامپایلر آنلاین تست کنید.";
+    runBtn.disabled = false;
+}
+
+function closeOut() {
+    document.getElementById('edOut').style.display = 'none';
+}
+
+// شروع
+updateHighlight();
+ta.focus();
+</script>
+</body>
+      </html>
