@@ -100,7 +100,7 @@ const CONFIG = {
         kw:['SELECT','FROM','WHERE','INSERT','INTO','VALUES','UPDATE','SET','DELETE','CREATE','TABLE','DATABASE','DROP','ALTER','ADD','COLUMN','PRIMARY','KEY','FOREIGN','REFERENCES','NOT','NULL','UNIQUE','INDEX','JOIN','INNER','LEFT','RIGHT','FULL','OUTER','ON','AND','OR','IN','LIKE','BETWEEN','ORDER','BY','ASC','DESC','GROUP','HAVING','LIMIT','OFFSET','DISTINCT','AS','COUNT','SUM','AVG','MIN','MAX','UNION','ALL','CASE','WHEN','THEN','ELSE','END','INTEGER','TEXT','VARCHAR','CHAR','DATE','TIMESTAMP','BOOLEAN','FLOAT','DOUBLE'] },
     react: { label:'React', exec:'ai',
         starter:`function App() {\n    const [count, setCount] = React.useState(0);\n    return (\n        <div>\n            <h1>Count: {count}</h1>\n            <button onClick={() => setCount(count + 1)}>+</button>\n        </div>\n    );\n}`,
-        kw:['function','return','const','let','useState','useEffect','useContext','useReducer','useMemo','useCallback','useRef','React','Component','props','state','setState','onClick','onChange','className','style','map','filter','reduce','render','key','children','createElement','Fragment','<>','</>','import','export','default','from'] },
+        kw:['function','return','const','let','useState','useEffect','useContext','useReducer','useMemo','useCallback','useRef','React','Component','props','state','setState','onClick','onChange','className','style','map','filter','reduce','render','key','children','createElement','Fragment','import','export','default','from'] },
     git: { label:'Git', exec:'ai',
         starter:`# Git Commands Example\ngit init\ngit add .\ngit commit -m "first commit"\ngit status`,
         kw:['git','init','add','commit','status','log','diff','clone','push','pull','fetch','branch','checkout','switch','merge','rebase','stash','pop','reset','revert','tag','remote','origin','main','master','HEAD','--hard','--soft','--mixed','-m','-a','-b','-d','-u','-v'] },
@@ -147,7 +147,6 @@ function updateHighlight() {
             return id;
         });
         
-        // کامنت‌ها - بر اساس زبان
         const commentRegex = (LANG === 'py' || LANG === 'php' || LANG === 'git') ? /(\/\/.*|#.*)/g : /(\/\/.*)/g;
         html = html.replace(commentRegex, '<span class="token-comment">$1</span>');
         
@@ -225,37 +224,23 @@ function insertAuto(item) {
     const insideQuotes = (before.split('"').length - 1) % 2 === 1;
     
     let insert, cursorPos;
-    
     if (type === 'tag') {
-        if (inTag) {
-            insert = `${word}></${word}>`;
-            cursorPos = word.length + 1;
-        } else {
-            insert = `<${word}></${word}>`;
-            cursorPos = word.length + 2;
-        }
+        if (inTag) { insert = `${word}></${word}>`; cursorPos = word.length + 1; }
+        else { insert = `<${word}></${word}>`; cursorPos = word.length + 2; }
     } else if (type === 'attr' && inTag && !insideQuotes) {
-        insert = `${word}=""`;
-        cursorPos = word.length + 2;
+        insert = `${word}=""`; cursorPos = word.length + 2;
     } else if (type === 'type' && insideQuotes) {
-        insert = `${word}"`;
-        cursorPos = word.length + 1;
+        insert = `${word}"`; cursorPos = word.length + 1;
     } else {
-        insert = word;
-        cursorPos = word.length;
+        insert = word; cursorPos = word.length;
     }
     
     ta.value = before + insert + after;
     ta.selectionStart = ta.selectionEnd = acStart + cursorPos;
-    hideAuto();
-    updateHighlight();
-    ta.focus();
+    hideAuto(); updateHighlight(); ta.focus();
 }
 
-ta.addEventListener('input', () => {
-    updateHighlight();
-    showAuto();
-});
+ta.addEventListener('input', () => { updateHighlight(); showAuto(); });
 
 ta.addEventListener('keydown', (e) => {
     if (acBox.style.display === 'block') {
@@ -268,7 +253,6 @@ ta.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') { hideAuto(); return; }
     }
     
-    // تورفتگی هوشمند
     if (e.key === 'Enter') {
         e.preventDefault();
         const pos = ta.selectionStart;
@@ -311,6 +295,8 @@ document.addEventListener('click', (e) => {
 });
 
 // ══════════ اجرا ══════════
+let pyodideInstance = null;
+
 async function runCode() {
     const out = document.getElementById('edOut');
     const outText = document.getElementById('edOutText');
@@ -325,7 +311,7 @@ async function runCode() {
     runBtn.disabled = true;
     
     try {
-        // HTML
+        // ─── HTML ───
         if (cfg.exec === 'html') {
             outText.style.display = 'none';
             iframe.style.display = 'block';
@@ -333,7 +319,7 @@ async function runCode() {
             return;
         }
         
-        // CSS
+        // ─── CSS ───
         if (cfg.exec === 'css') {
             outText.style.display = 'none';
             iframe.style.display = 'block';
@@ -341,61 +327,97 @@ async function runCode() {
             return;
         }
         
-        // JavaScript
+        // ─── JavaScript ───
         if (cfg.exec === 'js') {
             let logs = [];
             const orig = console.log;
             const origErr = console.error;
             console.log = (...a) => logs.push(a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' '));
             console.error = (...a) => logs.push('❌ ' + a.map(x=>String(x)).join(' '));
-            try { eval(code); } 
+            try { eval(code); }
             catch(e) { logs.push('❌ Error: ' + e.message); }
             finally { console.log = orig; console.error = origErr; }
             outText.textContent = logs.join('\n') || '(بدون خروجی)';
             return;
         }
         
-        // Python
+        // ─── Python (اصلاح شده برای جلوگیری از exit(1)) ───
         if (cfg.exec === 'py') {
-            if (!window.loadPyodide) {
-                outText.textContent = '⏳ بارگذاری موتور پایتون (فقط بار اول، حدود ۱۵ ثانیه)...';
-                await new Promise((res, rej) => {
-                    const s = document.createElement('script');
-                    s.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js';
-                    s.onload = res; 
-                    s.onerror = () => rej(new Error('بارگذاری پایتون ناموفق بود'));
-                    document.head.appendChild(s);
-                });
+            // بارگذاری Pyodide فقط یک بار
+            if (!pyodideInstance) {
+                if (!window.loadPyodide) {
+                    outText.textContent = '⏳ بارگذاری موتور پایتون (فقط بار اول، حدود ۱۵ ثانیه)...';
+                    await new Promise((res, rej) => {
+                        const s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js';
+                        s.onload = res;
+                        s.onerror = () => rej(new Error('بارگذاری پایتون ناموفق بود'));
+                        document.head.appendChild(s);
+                    });
+                }
+                outText.textContent = '⏳ راه‌اندازی پایتون...';
+                pyodideInstance = await loadPyodide();
             }
-            outText.textContent = '⏳ در حال راه‌اندازی پایتون...';
-            const py = await loadPyodide();
             
-            let result = '';
-            let error = '';
+            const py = pyodideInstance;
+            outText.textContent = '⏳ در حال اجرا...';
             
-            try {
-                await py.runPythonAsync(`
-import sys, io
-sys.stdout = io.StringIO()
-sys.stderr = io.StringIO()
+            // کد کاربر رو به عنوان متغیر گلوبال ست می‌کنیم
+            py.globals.set('__user_code__', code);
+            
+            // همه چیز داخل پایتون اجرا می‌شه تا هر خطایی (از جمله SystemExit) گرفته بشه
+            await py.runPythonAsync(`
+import sys, io, traceback
+
+# سطل خروجی
+_stdout_buf = io.StringIO()
+_stderr_buf = io.StringIO()
+_old_stdout, _old_stderr = sys.stdout, sys.stderr
+sys.stdout, sys.stderr = _stdout_buf, _stderr_buf
+
+# گرفتن sys.exit
+class _CaughtExit(BaseException):
+    def __init__(self, code=0):
+        self.code = code
+
+def _new_exit(code=0):
+    raise _CaughtExit(code)
+
+sys.exit = _new_exit
+
+# گرفتن exit و quit (builtin)
+import builtins
+builtins.exit = _new_exit
+builtins.quit = _new_exit
+
+# اجرا با try/except کامل
+_err_text = ""
+try:
+    _code = __user_code__
+    exec(compile(_code, "<user>", "exec"), {'__name__': '__main__'})
+except _CaughtExit as e:
+    _err_text = "SystemExit(" + str(e.code) + ") - برنامه با exit() بسته شد"
+except SystemExit as e:
+    _err_text = "SystemExit(" + str(e.code) + ") - برنامه با exit() بسته شد"
+except BaseException:
+    _err_text = traceback.format_exc()
+finally:
+    sys.stdout, sys.stderr = _old_stdout, _old_stderr
 `);
-                await py.runPythonAsync(code);
-                result = py.runPython('sys.stdout.getvalue()');
-                const stderr = py.runPython('sys.stderr.getvalue()');
-                if (stderr) error = stderr;
-            } catch(e) {
-                error = (e && e.message) ? e.message : String(e);
-            }
             
-            if (error) {
-                outText.textContent = (result ? result + '\n\n' : '') + '❌ خطا:\n' + error;
-            } else {
-                outText.textContent = result || '(بدون خروجی)';
+            const stdout = py.runPython('_stdout_buf.getvalue()');
+            const stderr = py.runPython('_stderr_buf.getvalue()');
+            const errText = py.runPython('_err_text');
+            
+            let finalOutput = stdout + stderr;
+            if (errText) {
+                finalOutput = (finalOutput ? finalOutput + '\n\n' : '') + '❌ ' + errText;
             }
+            outText.textContent = finalOutput || '(بدون خروجی)';
             return;
         }
         
-        // زبان‌هایی که در مرورگر اجرا نمی‌شن: PHP, Java, C#, C++, SQL, React, Git, Node
+        // ─── زبان‌هایی که در مرورگر اجرا نمی‌شن ───
         if (cfg.exec === 'ai') {
             outText.textContent = '⏳ در حال شبیه‌سازی خروجی با هوش مصنوعی...';
             
