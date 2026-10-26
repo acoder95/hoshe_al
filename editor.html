@@ -7,7 +7,6 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Tahoma,sans-serif;-webkit-tap-highlight-color:transparent}
 body{background:#1e1e1e;direction:rtl;overflow:hidden;display:flex;flex-direction:column;height:100vh;height:100dvh}
-
 .ed-header{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#252526;color:#fff;border-bottom:1px solid #333;flex-shrink:0;z-index:100}
 .btn{padding:8px 14px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;background:#555;color:#fff;font-family:Tahoma;font-size:13px}
 .btn:active{background:#444}
@@ -15,40 +14,23 @@ body{background:#1e1e1e;direction:rtl;overflow:hidden;display:flex;flex-directio
 .btn.run:active{background:#219a52}
 .btn.run:disabled{background:#555;opacity:.6}
 .ed-title{font-weight:bold;font-size:13px;color:#ddd}
-
 .ed-body{flex:1;position:relative;overflow:hidden;background:#1e1e1e}
 .editor-container{position:relative;width:100%;height:100%}
 #edHighlight,#edCode{margin:0;padding:15px;border:0;outline:0;font-family:'Consolas','Courier New',monospace;font-size:14px;line-height:1.6;white-space:pre;word-wrap:normal;tab-size:4;position:absolute;top:0;left:0;width:100%;height:100%;direction:ltr;text-align:left;box-sizing:border-box}
 #edHighlight{color:#d4d4d4;pointer-events:none;z-index:1;overflow:hidden}
 #edCode{color:transparent;background:transparent;caret-color:#fff;z-index:2;overflow:auto;resize:none}
-
 .token-keyword{color:#C586C0;font-weight:bold}
 .token-string{color:#CE9178}
 .token-comment{color:#6A9955;font-style:italic}
 .token-number{color:#B5CEA8}
-.token-tag{color:#569CD6}
-
-/* باکس پیشنهاد بزرگ و بالای صفحه */
-.autocomplete-box{
-    position:fixed;top:55px;left:8px;right:8px;
-    background:#252526;border:2px solid #667eea;border-radius:10px;
-    box-shadow:0 10px 30px rgba(0,0,0,.8);
-    z-index:999;max-height:45vh;overflow-y:auto;
-    display:none;padding:8px;
-}
-.ac-item{
-    padding:10px 12px;color:#e0e0e0;font-family:monospace;font-size:14px;
-    cursor:pointer;border-radius:6px;margin-bottom:4px;
-    display:flex;align-items:center;gap:10px;background:#1e1e1e;
-    user-select:none;
-}
+.autocomplete-box{position:fixed;top:55px;left:8px;right:8px;background:#252526;border:2px solid #667eea;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.8);z-index:999;max-height:45vh;overflow-y:auto;display:none;padding:8px}
+.ac-item{padding:10px 12px;color:#e0e0e0;font-family:monospace;font-size:14px;cursor:pointer;border-radius:6px;margin-bottom:4px;display:flex;align-items:center;gap:10px;background:#1e1e1e;user-select:none}
 .ac-item:last-child{margin-bottom:0}
 .ac-item.active,.ac-item:active{background:#094771;color:#fff}
 .ac-item .icon{color:#667eea;font-weight:bold;font-size:13px;min-width:24px;text-align:center;background:#333;border-radius:4px;padding:2px 4px}
 .ac-item .word{font-weight:bold;flex:1}
 .ac-item .type-label{font-size:10px;color:#888;padding:2px 6px;background:#333;border-radius:4px}
 .ac-item.active .type-label{background:#1a5c9c;color:#fff}
-
 #edOut{display:none;position:fixed;inset:0;background:#fff;z-index:1000;flex-direction:column}
 .out-head{padding:10px;background:#eee;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ddd}
 #edOutText{padding:15px;overflow:auto;flex:1;direction:ltr;text-align:left;font-family:monospace;white-space:pre-wrap;margin:0;color:#333;font-size:13px}
@@ -82,37 +64,49 @@ body{background:#1e1e1e;direction:rtl;overflow:hidden;display:flex;flex-directio
 </div>
 
 <script>
+const WORKER_URL = "https://sadqyamyrmhmd67--c2993618cb0f11f1bbb61607ee4eb77e.web.val.run";
 const params = new URLSearchParams(location.search);
 const LANG = params.get('lang') || 'html';
 
-// ══════════════ لیست کامل کلمات کلیدی هر زبان ══════════════
 const CONFIG = {
     html: { label:'HTML', exec:'html',
-        starter:`<!DOCTYPE html>\n<html lang="fa">\n<head>\n    <title>صفحه من</title>\n</head>\n<body>\n    <h1>سلام دنیا</h1>\n</body>\n</html>`,
-        tags:['html','head','body','div','span','h1','h2','h3','h4','h5','h6','p','a','img','ul','ol','li','table','thead','tbody','tfoot','tr','td','th','form','input','button','select','option','optgroup','textarea','label','fieldset','legend','script','style','meta','link','title','base','section','header','footer','nav','main','article','aside','figure','figcaption','video','audio','source','track','canvas','svg','iframe','embed','object','param','hr','br','strong','em','b','i','u','s','small','mark','code','pre','blockquote','q','cite','dl','dt','dd','details','summary','dialog','picture','template','slot','wbr','abbr','address','time','data','del','ins','sub','sup','kbd','samp','var','progress','meter','output','menu'],
-        attrs:['class','id','href','src','srcset','alt','title','type','value','name','placeholder','action','method','target','rel','style','width','height','disabled','checked','selected','readonly','required','autofocus','autocomplete','multiple','min','max','step','pattern','maxlength','minlength','rows','cols','for','lang','charset','content','http-equiv','download','media','sizes','loading','decoding','tabindex','role','aria-label','aria-hidden','onclick','onload','onsubmit'],
-        types:['text','password','email','number','tel','url','date','time','datetime-local','month','week','color','range','file','hidden','checkbox','radio','submit','reset','button','image','search']
-    },
-    py: { label:'Python', exec:'py',
-        starter:`def hello(name):\n    print(f"Hello {name}")\n\nhello("Ali")`,
-        kw:['def','class','import','from','return','if','elif','else','for','while','try','except','finally','with','as','print','input','len','range','int','str','float','bool','list','dict','set','tuple','lambda','True','False','None','and','or','not','in','is','pass','break','continue','yield','global','nonlocal','assert','del','raise','async','await','self','super','type','isinstance','issubclass','enumerate','zip','map','filter','sorted','reversed','sum','min','max','abs','round','open','bytes','bytearray','frozenset','complex','hex','oct','bin','chr','ord','divmod','pow','id','hash','repr','format','dir','vars','locals','globals','callable','iter','next','all','any','slice','__init__','__name__','__main__','__str__','__repr__','__len__','__iter__','__next__','append','extend','insert','remove','pop','index','count','sort','reverse','clear','copy','keys','values','items','get','update','split','join','strip','lower','upper','replace','find','startswith','endswith']
-    },
-    java: { label:'Java', exec:'none',
-        starter:`public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello");\n    }\n}`,
-        kw:['public','private','protected','class','static','void','int','long','short','byte','char','boolean','double','float','String','if','else','for','while','do','switch','case','break','continue','return','new','import','package','extends','implements','interface','abstract','final','try','catch','throw','throws','finally','null','true','false','this','super','instanceof','synchronized','volatile','transient','native','strictfp','assert','enum','var','yield','println','main','args','System','out','StringBuilder','ArrayList','HashMap','HashSet','Integer','Double']
-    },
-    cs: { label:'C#', exec:'none',
-        starter:`using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello");\n    }\n}`,
-        kw:['using','namespace','class','struct','interface','enum','static','void','int','long','short','byte','char','bool','double','float','decimal','string','object','var','dynamic','if','else','for','while','do','foreach','switch','case','break','continue','return','public','private','protected','internal','new','this','base','null','true','false','try','catch','throw','finally','async','await','yield','out','ref','in','params','readonly','const','sealed','abstract','virtual','override','partial','delegate','event','operator','Console','WriteLine','ReadLine','ToString','GetType','Length']
-    },
-    cpp: { label:'C++', exec:'none',
-        starter:`#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello";\n    return 0;\n}`,
-        kw:['include','using','namespace','int','long','short','char','bool','double','float','void','auto','if','else','for','while','do','switch','case','break','continue','return','cout','cin','cerr','endl','class','struct','union','enum','public','private','protected','new','delete','true','false','nullptr','const','static','virtual','override','final','template','typename','this','friend','operator','mutable','explicit','inline','try','catch','throw','sizeof','vector','string','map','set','array','std','main']
-    },
+        starter:`<!DOCTYPE html>\n<html lang="fa">\n<head>\n    <title>صفحه من</title>\n</head>\n<body>\n    <h1>سلام دنیا</h1>\n    <h6>تیتر کوچک</h6>\n</body>\n</html>`,
+        tags:['html','head','body','div','span','h1','h2','h3','h4','h5','h6','p','a','img','ul','ol','li','table','thead','tbody','tr','td','th','form','input','button','select','option','textarea','label','fieldset','legend','script','style','meta','link','title','section','header','footer','nav','main','article','aside','figure','figcaption','video','audio','source','canvas','svg','iframe','hr','br','strong','em','b','i','u','small','mark','code','pre','blockquote','dl','dt','dd','details','summary','dialog'],
+        attrs:['class','id','href','src','alt','title','type','value','name','placeholder','action','method','target','rel','style','width','height','disabled','checked','selected','readonly','required','autofocus','multiple','min','max','step','maxlength','rows','cols','for','lang','charset','content','download','media','onclick','onload'],
+        types:['text','password','email','number','tel','url','date','time','color','range','file','hidden','checkbox','radio','submit','reset','button','search'] },
+    css: { label:'CSS', exec:'css',
+        starter:`body {\n    background: #f0f0f0;\n    font-family: Tahoma;\n}\nh1 {\n    color: #667eea;\n    text-align: center;\n}`,
+        kw:['color','background','background-color','background-image','font-family','font-size','font-weight','text-align','text-decoration','line-height','padding','margin','border','border-radius','width','height','display','flex','grid','position','top','right','left','bottom','z-index','overflow','transition','transform','opacity','box-shadow','text-shadow','flex-direction','justify-content','align-items','flex-wrap','gap','grid-template-columns','grid-template-rows','block','inline','inline-block','none','absolute','relative','fixed','sticky','solid','dashed','dotted','bold','italic','center','left','right','hover','active','focus','nth-child','first-child','last-child'] },
     js: { label:'JavaScript', exec:'js',
         starter:`let name = "Ali";\nconsole.log("Hello " + name);\n\nfor(let i=0; i<3; i++) {\n    console.log(i);\n}`,
-        kw:['let','const','var','function','return','if','else','for','while','do','switch','case','break','continue','console','log','document','window','new','this','true','false','null','undefined','typeof','instanceof','try','catch','throw','finally','async','await','class','extends','super','yield','delete','in','of','void','import','export','default','from','getElementById','querySelector','addEventListener','createElement','innerHTML','textContent','className','style','length','push','pop','shift','unshift','slice','splice','concat','join','map','filter','reduce','forEach','find','sort','reverse','includes','indexOf','some','every','then','catch','JSON','parse','stringify','Math','random','floor','ceil','round','parseInt','parseFloat']
-    }
+        kw:['let','const','var','function','return','if','else','for','while','do','switch','case','break','continue','console','log','document','window','new','this','true','false','null','undefined','typeof','try','catch','throw','finally','async','await','class','extends','super','yield','import','export','default','from','getElementById','querySelector','addEventListener','innerHTML','textContent','push','pop','shift','slice','map','filter','reduce','forEach','find','sort','includes','indexOf','JSON','parse','stringify','Math','random','floor','ceil','round','parseInt','parseFloat','alert','prompt'] },
+    py: { label:'Python', exec:'py',
+        starter:`def hello(name):\n    print(f"Hello {name}")\n\nhello("Ali")\n\nfor i in range(3):\n    print(i)`,
+        kw:['def','class','import','from','return','if','elif','else','for','while','try','except','finally','with','as','print','input','len','range','int','str','float','bool','list','dict','set','tuple','lambda','True','False','None','and','or','not','in','is','pass','break','continue','yield','global','nonlocal','assert','del','raise','async','await','self','super','type','isinstance','enumerate','zip','map','filter','sorted','reversed','sum','min','max','abs','round','open','chr','ord','pow','format','append','extend','insert','remove','pop','index','count','sort','reverse','clear','copy','keys','values','items','get','update','split','join','strip','lower','upper','replace','find','startswith','endswith'] },
+    java: { label:'Java', exec:'ai',
+        starter:`public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello");\n    }\n}`,
+        kw:['public','private','protected','class','static','void','int','long','short','byte','char','boolean','double','float','String','if','else','for','while','do','switch','case','break','continue','return','new','import','package','extends','implements','interface','abstract','final','try','catch','throw','throws','finally','null','true','false','this','super','instanceof','enum','var','main','args','System','out','println','StringBuilder','ArrayList','HashMap','HashSet','Integer','Double'] },
+    cs: { label:'C#', exec:'ai',
+        starter:`using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello");\n    }\n}`,
+        kw:['using','namespace','class','struct','interface','enum','static','void','int','long','string','bool','double','float','decimal','object','var','if','else','for','while','foreach','switch','case','break','return','public','private','protected','internal','new','this','base','null','true','false','try','catch','throw','finally','async','await','out','ref','params','const','abstract','virtual','override','partial','Console','WriteLine','ToString','Length'] },
+    cpp: { label:'C++', exec:'ai',
+        starter:`#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello";\n    return 0;\n}`,
+        kw:['include','using','namespace','int','long','char','bool','double','float','void','auto','if','else','for','while','do','switch','case','break','continue','return','cout','cin','endl','class','struct','public','private','protected','new','delete','true','false','nullptr','const','static','virtual','template','typename','this','operator','sizeof','vector','string','map','set','std','main'] },
+    php: { label:'PHP', exec:'ai',
+        starter:`<?php\n$name = "Ali";\necho "Hello $name";\n?>` ,
+        kw:['echo','print','if','else','elseif','for','while','do','foreach','switch','case','break','continue','return','function','class','interface','abstract','final','public','private','protected','static','new','this','true','false','null','array','isset','empty','unset','include','require','include_once','require_once','namespace','use','try','catch','throw','finally','function_exists','strlen','str_replace','strpos','substr','strtolower','strtoupper','trim','explode','implode','array_push','array_pop','count','in_array','json_encode','json_decode','define','die','exit'] },
+    sql: { label:'SQL', exec:'ai',
+        starter:`SELECT * FROM users;\n\nCREATE TABLE users (\n    id INTEGER PRIMARY KEY,\n    name TEXT\n);`,
+        kw:['SELECT','FROM','WHERE','INSERT','INTO','VALUES','UPDATE','SET','DELETE','CREATE','TABLE','DATABASE','DROP','ALTER','ADD','COLUMN','PRIMARY','KEY','FOREIGN','REFERENCES','NOT','NULL','UNIQUE','INDEX','JOIN','INNER','LEFT','RIGHT','FULL','OUTER','ON','AND','OR','IN','LIKE','BETWEEN','ORDER','BY','ASC','DESC','GROUP','HAVING','LIMIT','OFFSET','DISTINCT','AS','COUNT','SUM','AVG','MIN','MAX','UNION','ALL','CASE','WHEN','THEN','ELSE','END','INTEGER','TEXT','VARCHAR','CHAR','DATE','TIMESTAMP','BOOLEAN','FLOAT','DOUBLE'] },
+    react: { label:'React', exec:'ai',
+        starter:`function App() {\n    const [count, setCount] = React.useState(0);\n    return (\n        <div>\n            <h1>Count: {count}</h1>\n            <button onClick={() => setCount(count + 1)}>+</button>\n        </div>\n    );\n}`,
+        kw:['function','return','const','let','useState','useEffect','useContext','useReducer','useMemo','useCallback','useRef','React','Component','props','state','setState','onClick','onChange','className','style','map','filter','reduce','render','key','children','createElement','Fragment','<>','</>','import','export','default','from'] },
+    git: { label:'Git', exec:'ai',
+        starter:`# Git Commands Example\ngit init\ngit add .\ngit commit -m "first commit"\ngit status`,
+        kw:['git','init','add','commit','status','log','diff','clone','push','pull','fetch','branch','checkout','switch','merge','rebase','stash','pop','reset','revert','tag','remote','origin','main','master','HEAD','--hard','--soft','--mixed','-m','-a','-b','-d','-u','-v'] },
+    node: { label:'Node.js', exec:'ai',
+        starter:`const http = require('http');\n\nconst server = http.createServer((req, res) => {\n    res.end('Hello');\n});\n\nserver.listen(3000);`,
+        kw:['require','module','exports','import','from','const','let','var','function','return','if','else','for','while','async','await','Promise','then','catch','finally','console','log','error','warn','info','process','argv','env','exit','fs','readFile','writeFile','http','createServer','listen','path','join','resolve','basename','os','platform','homedir','EventEmitter','on','emit','Stream','Buffer','JSON','parse','stringify','setTimeout','setInterval','clearTimeout'] }
 };
 
 const cfg = CONFIG[LANG] || CONFIG.html;
@@ -123,7 +117,6 @@ const acBox = document.getElementById('autoCompleteBox');
 document.getElementById('edTitle').textContent = 'ویرایشگر ' + cfg.label;
 ta.value = cfg.starter;
 
-// ───── ساخت لیست کلمات ─────
 let WORD_LIST = null;
 function getWordList() {
     if (WORD_LIST) return WORD_LIST;
@@ -138,7 +131,7 @@ function getWordList() {
     return WORD_LIST;
 }
 
-// ══════════════ ۱. رنگ‌آمیزی ══════════════
+// ══════════ رنگ‌آمیزی ══════════
 let hTimer = null;
 function updateHighlight() {
     if (hTimer) clearTimeout(hTimer);
@@ -154,12 +147,16 @@ function updateHighlight() {
             return id;
         });
         
-        html = html.replace(/(\/\/.*|#.*)/g, '<span class="token-comment">$1</span>');
+        // کامنت‌ها - بر اساس زبان
+        const commentRegex = (LANG === 'py' || LANG === 'php' || LANG === 'git') ? /(\/\/.*|#.*)/g : /(\/\/.*)/g;
+        html = html.replace(commentRegex, '<span class="token-comment">$1</span>');
         
         const allKw = [...(cfg.tags||[]), ...(cfg.attrs||[]), ...(cfg.types||[]), ...(cfg.kw||[])];
         if (allKw.length > 0) {
-            const kwRegex = new RegExp(`\\b(${allKw.join('|')})\\b`, 'gi');
-            html = html.replace(kwRegex, '<span class="token-keyword">$1</span>');
+            try {
+                const kwRegex = new RegExp(`\\b(${allKw.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')})\\b`, 'gi');
+                html = html.replace(kwRegex, '<span class="token-keyword">$1</span>');
+            } catch(e) {}
         }
         
         html = html.replace(/\b(\d+)\b/g, '<span class="token-number">$1</span>');
@@ -176,7 +173,7 @@ ta.addEventListener('scroll', () => {
     hl.scrollLeft = ta.scrollLeft;
 });
 
-// ══════════════ ۲. پیشنهاد کد ══════════════
+// ══════════ پیشنهاد کد ══════════
 let acIdx = 0, acMatches = [], acStart = 0;
 
 function showAuto() {
@@ -185,7 +182,6 @@ function showAuto() {
     const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
     const lineText = val.substring(lineStart, pos);
     const m = lineText.match(/([a-zA-Z_]\w*)$/);
-    
     if (!m || m[0].length < 1) { hideAuto(); return; }
     
     const word = m[0].toLowerCase();
@@ -214,10 +210,7 @@ function showAuto() {
     });
 }
 
-function hideAuto() {
-    acBox.style.display = 'none';
-    acMatches = [];
-}
+function hideAuto() { acBox.style.display = 'none'; acMatches = []; }
 
 function insertAuto(item) {
     const { word, type } = item;
@@ -226,7 +219,6 @@ function insertAuto(item) {
     const before = val.substring(0, acStart);
     const after = val.substring(pos);
     
-    // تشخیص موقعیت
     const lastLt = before.lastIndexOf('<');
     const lastGt = before.lastIndexOf('>');
     const inTag = lastLt > lastGt;
@@ -266,7 +258,6 @@ ta.addEventListener('input', () => {
 });
 
 ta.addEventListener('keydown', (e) => {
-    // کنترل باکس پیشنهاد
     if (acBox.style.display === 'block') {
         const items = acBox.querySelectorAll('.ac-item');
         if (e.key === 'ArrowDown') { e.preventDefault(); acIdx = Math.min(acIdx+1, items.length-1); refreshActive(items); return; }
@@ -288,13 +279,10 @@ ta.addEventListener('keydown', (e) => {
         const trim = line.trim();
         let newInd = ind;
         
-        // اگر خط با براکت باز یا کولون تمام شد، جلو برو
         if (/[{[(]$/.test(trim) || (trim.endsWith(':') && !trim.startsWith('#')) ||
             (/^<[a-zA-Z][^>]*>$/.test(trim) && !trim.endsWith('/>') && !/^<\//.test(trim))) {
             newInd += '    ';
-        }
-        // اگر خط با براکت بسته یا تگ بسته شروع می‌شد، عقب بیا
-        else if (/^[}\])]/.test(trim) || /^<\//.test(trim)) {
+        } else if (/^[}\])]/.test(trim) || /^<\//.test(trim)) {
             newInd = ind.length >= 4 ? ind.substring(0, ind.length-4) : '';
         }
         
@@ -304,23 +292,6 @@ ta.addEventListener('keydown', (e) => {
         return;
     }
     
-    // اگر توی خط خالی با فاصله، `</` زد، خودکار عقب بیاد
-    if (e.key === '/' && ta.value[ta.selectionStart-1] === '<') {
-        const pos = ta.selectionStart;
-        const val = ta.value;
-        const lineStart = val.lastIndexOf('\n', pos - 2) + 1;
-        const line = val.substring(lineStart, pos - 1);
-        if (/^\s+$/.test(line) && line.length >= 4) {
-            e.preventDefault();
-            const newLine = line.substring(0, line.length - 4);
-            ta.value = val.substring(0, lineStart) + newLine + '</' + val.substring(pos);
-            ta.selectionStart = ta.selectionEnd = lineStart + newLine.length + 2;
-            updateHighlight();
-            return;
-        }
-    }
-    
-    // Tab
     if (e.key === 'Tab' && acBox.style.display !== 'block') {
         e.preventDefault();
         const pos = ta.selectionStart;
@@ -339,7 +310,7 @@ document.addEventListener('click', (e) => {
     if (!acBox.contains(e.target) && e.target !== ta) hideAuto();
 });
 
-// ══════════════ ۳. اجرا ══════════════
+// ══════════ اجرا ══════════
 async function runCode() {
     const out = document.getElementById('edOut');
     const outText = document.getElementById('edOutText');
@@ -354,6 +325,7 @@ async function runCode() {
     runBtn.disabled = true;
     
     try {
+        // HTML
         if (cfg.exec === 'html') {
             outText.style.display = 'none';
             iframe.style.display = 'block';
@@ -361,43 +333,96 @@ async function runCode() {
             return;
         }
         
+        // CSS
+        if (cfg.exec === 'css') {
+            outText.style.display = 'none';
+            iframe.style.display = 'block';
+            iframe.srcdoc = `<!DOCTYPE html><html><head><style>${code}</style></head><body><h1>Test Heading</h1><h2>Sub Heading</h2><p>Paragraph text</p><button>Button</button><a href="#">Link</a><div class="box">Box</div></body></html>`;
+            return;
+        }
+        
+        // JavaScript
         if (cfg.exec === 'js') {
             let logs = [];
             const orig = console.log;
-            console.log = (...a) => logs.push(a.join(' '));
-            try { eval(code); } finally { console.log = orig; }
+            const origErr = console.error;
+            console.log = (...a) => logs.push(a.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join(' '));
+            console.error = (...a) => logs.push('❌ ' + a.map(x=>String(x)).join(' '));
+            try { eval(code); } 
+            catch(e) { logs.push('❌ Error: ' + e.message); }
+            finally { console.log = orig; console.error = origErr; }
             outText.textContent = logs.join('\n') || '(بدون خروجی)';
             return;
         }
         
+        // Python
         if (cfg.exec === 'py') {
             if (!window.loadPyodide) {
-                outText.textContent = '⏳ بارگذاری موتور پایتون (فقط بار اول)...';
+                outText.textContent = '⏳ بارگذاری موتور پایتون (فقط بار اول، حدود ۱۵ ثانیه)...';
                 await new Promise((res, rej) => {
                     const s = document.createElement('script');
                     s.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js';
-                    s.onload = res; s.onerror = rej;
+                    s.onload = res; 
+                    s.onerror = () => rej(new Error('بارگذاری پایتون ناموفق بود'));
                     document.head.appendChild(s);
                 });
             }
+            outText.textContent = '⏳ در حال راه‌اندازی پایتون...';
             const py = await loadPyodide();
-            await py.runPythonAsync(`
+            
+            let result = '';
+            let error = '';
+            
+            try {
+                await py.runPythonAsync(`
 import sys, io
 sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
-class _ExitErr(Exception): pass
-def _exit(c=0): raise _ExitErr(c)
-sys.exit = _exit
 `);
-            try { await py.runPythonAsync(code); }
-            catch(err) { if (!err.message.includes('_ExitErr')) throw err; }
-            outText.textContent = (py.runPython('sys.stdout.getvalue()') + py.runPython('sys.stderr.getvalue()')) || '(بدون خروجی)';
+                await py.runPythonAsync(code);
+                result = py.runPython('sys.stdout.getvalue()');
+                const stderr = py.runPython('sys.stderr.getvalue()');
+                if (stderr) error = stderr;
+            } catch(e) {
+                error = (e && e.message) ? e.message : String(e);
+            }
+            
+            if (error) {
+                outText.textContent = (result ? result + '\n\n' : '') + '❌ خطا:\n' + error;
+            } else {
+                outText.textContent = result || '(بدون خروجی)';
+            }
             return;
         }
         
-        outText.textContent = '⚠️ اجرای این زبان در مرورگر پشتیبانی نمی‌شود.\nکد خود را در یک کامپایلر آنلاین تست کنید.';
+        // زبان‌هایی که در مرورگر اجرا نمی‌شن: PHP, Java, C#, C++, SQL, React, Git, Node
+        if (cfg.exec === 'ai') {
+            outText.textContent = '⏳ در حال شبیه‌سازی خروجی با هوش مصنوعی...';
+            
+            const prompt = `این کد ${cfg.label} را اجرا کن و فقط و فقط خروجی خام آن را بنویس (بدون هیچ توضیح اضافه، بدون markdown، بدون بلوک کد). اگر خطایی دارد، متن خطا را بنویس:\n\n${code}`;
+            
+            const res = await fetch(WORKER_URL, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0,
+                    max_tokens: 800,
+                    model: 'gpt-4o-mini'
+                })
+            });
+            
+            if (res.status === 429) throw new Error('محدودیت ۲۰ درخواست در ۱۲ ساعت');
+            if (!res.ok) throw new Error('خطای سرور: ' + res.status);
+            
+            const data = await res.json();
+            const output = data.choices?.[0]?.message?.content || '(بدون خروجی)';
+            outText.textContent = output.trim();
+            return;
+        }
+        
     } catch(err) {
-        outText.textContent = '❌ خطا: ' + (err.message || err);
+        outText.textContent = '❌ خطا: ' + (err.message || String(err));
     } finally {
         runBtn.disabled = false;
     }
